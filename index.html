@@ -18,7 +18,7 @@
         <td>
             <h1 class="title">OpenBSD Router Guide</h1>
             <h4>Network segmenting firewall, DHCP, DNS with Unbound, domain blocking and much more<br>
-                <span style="font-size:x-small;font-weight:initial;">OpenBSD: 3.8 · Published: 2020-11-05 · Updated: 2020-11-08 · Version: 1.1.2</span>
+                <span style="font-size:x-small;font-weight:initial;">OpenBSD: 3.8 · Published: 2020-11-05 · Updated: 2020-11-09 · Version: 1.1.3</span>
             </h4>
         </td>
     </tr>
@@ -826,7 +826,7 @@ remote-control:
 use-syslog: no
 log-time-ascii: yes
 </code></pre>
-<p class="info info-blue" style="font-size:initial;"><b>NOTE:</b><br>We do not use the full path to the log file because Unbound is chrooted. With the <code>logfile</code> option above the log file ends up in <code>/var/unbound/log/unbound.conf.</code></p>
+<p class="info info-blue" style="font-size:initial;"><b>NOTE:</b><br>We do not use the full path to the log file because Unbound is chrooted. With the <code>logfile</code> option above the log file ends up in <code>/var/unbound/log/unbound.log.</code></p>
 <p>Then restart Unbound:</p>
 <pre><code class="command"># rcctl restart unbound
 </code></pre>
