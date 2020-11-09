@@ -1,0 +1,1097 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<title>OpenBSD Router Guide</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<link rel="stylesheet" href="https://unixsheikh.com/includes/css/stylesheet.css">
+<link rel="shortcut icon" href="/includes/img/openbsd-favicon.ico" type="image/x-icon">
+</head>
+<body>
+
+<article>
+<table>
+    <tr>
+        <td><img src="/includes/img/openbsd-icon.png" alt="OpenBSD icon"></td>
+        <td>
+            <h1 class="title">OpenBSD Router Guide</h1>
+            <h4>Network segmenting firewall, DHCP, DNS with Unbound, domain blocking and much more<br>
+                <span style="font-size:x-small;font-weight:initial;">OpenBSD: 3.8 · Published: 2020-11-05 · Updated: 2020-11-08 · Version: 1.1.2</span>
+            </h4>
+        </td>
+    </tr>
+</table>
+
+<h2>Introduction</h2>
+
+<div class="info info-yellow abstract">In this guide we're going to take a look at how we can use cheap and "low end" hardware to build an amazing OpenBSD router with firewalling capabilities, segmented local area networks, DNS with domain blocking, DHCP and more.<br><br>We will use a setup in which the router segments the local area network (LAN) into three separate networks, one for the grown-ups in the house, one for the children, and one for public facing servers, such as a private web server or mail server. We will also look at how we can use DNS to block out ads, porn, and other websites on the Internet. The OpenBSD router can also be used on small to mid-size offices.</div>
+
+<p style="margin-top:30px;font-size:larger;">Table of contents</p>
+<ul>
+    <li><a href="#why-a-firewall">Why a firewall?</a></li>
+    <li><a href="#the-hardware">The hardware</a></li>
+    <li><a href="#why-openbsd">Why OpenBSD?</a></li>
+    <li><a href="#the-network">The network</a>
+    <ul>
+        <li><a href="#setting-up-the-network">Setting up the network</a></li>
+    </ul>
+    </li>
+    <li><a href="#dhcp">DHCP</a></li>
+    <li><a href="#a-packet-filtering-firewall">PF - A packet filtering firewall</a>
+    <ul>
+        <li><a href="#pf-setup">PF setup</a></li>
+        <li><a href="#clarifications">Clarifications</a></li>
+        <li><a href="#pf-domain-name-resolution">Domain name or hostname resolution</a></li>
+        <li><a href="#the-ruleset">The ruleset</a>
+            <ul>
+                <li><a href="#whitelist">The children's whitelist</a>
+                    <ul>
+                        <li><a href="#persistent-table">Using a persistent table</a></li>
+                    </ul>
+                </li>
+            </ul>
+        </li>
+        <li><a href="#loading-ruleset">Loading the rules</a></li>
+        <li><a href="#logging">Logging and monitoring</a></li>
+    </ul>
+    </li>
+    <li><a href="#domain-name-service">DNS</a>
+    <ul>
+        <li><a href="#unbound">I present to you, Unbound</a></li>
+        <li><a href="#blocking-with-dns">Blocking with DNS</a>
+            <ul>
+                <li><a href="#nxdomain">NXDOMAIN vs redirecting</a></li>
+            </ul>
+        </li>
+        <li><a href="#doh">The problem with DNS over HTTPS (DoH)</a></li>
+        <li><a href="#unbound-setup">Setting up Unbound</a>
+            <ul>
+                <li><a href="#basic-settings">Basic settings</a></li>
+                <li><a href="#lets-block-some-domains">Let's block some domains!</a></li>
+            </ul>
+        </li>
+        <li><a href="#dns-security">DNS security</a>
+            <ul>
+                <li><a href="#dns-hijacking">DNS hijacking</a>
+                    <ul>
+                        <li><a href="#dns-hijacking-prevention">DNS hijacking prevention</a></li>
+                    </ul>
+                </li>
+                <li><a href="#dns-spoofing">DNS spoofing</a>
+                    <ul>
+                        <li><a href="#dns-spoofing-prevention">DNS spoofing prevention</a></li>
+                    </ul>
+                </li>
+            </ul>
+        </li>
+    </ul>
+    </li>
+    <li><a href="#appendix">Appendix</a>
+        <ul>
+            <li><a href="#inspecting-doh">Inspecting DNS over HTTPS (DoH)</a></li>
+            <li><a href="#how-to-contribute">How to contribute to the guide?</a></li>
+        </ul>
+    </li>
+</ul>
+
+<h2 id="why-a-firewall">Why a firewall?</h2>
+<p>Almost no matter how you connect to the Internet from your home or office, you need a real firewall between you and the modem or router that your ISP has provided you with.</p>
+<p>Very rarely do consumer-grade modems or routers get firmware updates and they are often vulnerable to <a href="https://en.wikipedia.org/wiki/Home_router#Security">network attacks</a> that turns these devices into <a href="https://en.wikipedia.org/wiki/Botnet">botnets</a>, such like the <a href="https://en.wikipedia.org/wiki/Mirai_(malware)">Mirai malware</a>. Many consumer-grade modems and routers is to blame for some of the largest <a href="https://en.wikipedia.org/wiki/Distributed_denial_of_service_attack">distributed denial of service (DDoS) attacks</a>.</p>
+<p>A firewall between you and your ISP modem or router cannot protect your modem or router device against attacks, but it can protect your computers and devices on the inside of the network, and it can help you monitor and control the traffic that comes and goes to and from your local network.</p>
+<p>Without a firewall between your local network and the ISP modem or router you could basically consider this an open door policy, like leaving the door to your house wide open, because you cannot trust the equipment from your ISP.</p>
+<p>It is always a really good idea to put a real firewall between your local network and the Internet, and with OpenBSD you get an very solid solution.</p>
+
+<h2 id="the-hardware">The hardware</h2>
+<p>You don't have to buy expensive hardware to get an effective router and firewall for your house or office. Even with cheap and "low end" hardware you can get a very solid solution.</p>
+<p>I have build multiple solutions with the <a href="https://www.asrock.com/mb/Intel/Q1900DC-ITX/">ASRock Q1900DC-ITX</a> motherboard that comes with an Intel Quad-Core Celeron processor.</p>
+<p><img src="/includes/img/asrock-q1900dc-itx.png" alt="ASRock Q1900DC-ITX motherboard"></p>
+<p>I'll admit, it's a pretty "crappy" motherboard, but it gets the job done and I have several builds that have run very solid for many years on gigabit networks with full saturation and the firewall, DNS, etc. working "overtime" and the CPU hardly breaks a sweat.</p>
+<p>The ASRock Q1900DC-ITX motherboard has the advantage that it comes with a DC-In Jack that is compatible with a 9~19V power adapter, making it very power saving. Unfortunatly the ASRock Q1900DC-ITX motherboard is no longer made, but I'm just using it as an example, I have used several other cheap boards as well.</p>
+<p>I have also used the ASRock Q1900-ITX (it doesn't come with the DC-In Jack) combined with a PicoPSU.</p>
+<p><img src="/includes/img/picopsu.png" alt="PicoPSU power supply"></p>
+<p>You can find different brands and versions of the PicoPSU, some are better quality than others. I have two different brands, the original and a cheaper knockoff, both performs very well and they save quite a bit of power contrary to running with a normal power supply.</p>
+<p>Last, I am using a cheap Intel knockoff quad port NIC found on Ebay like this one:</p>
+<p><img src="/includes/img/intel-quad-nic.png" alt="Intel Quad NIC"></p>
+<p>I know it is better to use quality hardware, especially on a network that you care about, but this tutorial is about how you can get away with using fairly cheep hardware and still get an extremely useful product that will continue to serve you well for many years - at least that is my experience.</p>
+<p>I recommend that you look for a low power mini ITX board with hardware <a href="https://www.openbsd.org/amd64.html">supported by OpenBSD</a>, such as an Intel Celeron or Intel i3 processor. These boards are typically cheap, less power hungry, and they don't take up much space. I don't recommend using the Intel Atom CPU if you have a gigabit network as they usually choke because they can't handle the amount of traffic, but your mileage may vary.</p>
+<p>You might also need a couple of cheap gigabit switches for the segmented local network, at least if you have more than one computer you want to connect to the same LAN :)</p>
+
+<h2 id="why-openbsd">Why OpenBSD?</h2>
+<p>In truth, you can get a similar setup with one of the other <a href="https://en.wikipedia.org/wiki/Comparison_of_BSD_operating_systems">BSD flavors</a> or one of the many different <a href="https://en.wikipedia.org/wiki/Linux_distribution">Linux distribution</a>, but <a href="https://www.openbsd.org/">OpenBSD</a> is specifically very well suited and designed for this kind of task. Not only does it come with all the needed software in the base install, but it also has significantly better security and tons of improved mitigations already build-in into the operating system. I <a href="https://www.unixsheikh.com/articles/openbsd-is-fantastic.html">highly recommend</a> OpenBSD over any other operating system for this kind of task.</p>
+<p>This guide is not going to show you how to install OpenBSD. If you haven't done that before I recommend you spin up some kind of virtual machine or see if you have some unused and supported hardware laying around you can play with. OpenBSD is one of the easiest and quickest operating systems to install. Don't be afraid of the non-gui approach, once you have tried it you will really appreciate the simplicity. Use the default settings when in doubt.</p>
+<p>Before you endeavor on this journey make sure to reference the OpenBSD documentation! Not only is everything very well documented, but you will most likely find all the answers you need right there. Read the <a href="https://www.openbsd.org/faq/index.html">OpenBSD FAQ</a> and take a look at the different <a href="https://man.openbsd.org/">manual pages</a> for the software we're going to use.</p>
+<p>Another really useful place to find general information about OpenBSD is the <a href="https://marc.info/?l=openbsd-misc">OpenBSD mailing list archives</a>. Also make sure to stay up to date with relevant information by subscribing to the <a href="https://www.openbsd.org/mail.html">Announcements and security advisories</a> mailing list.</p>
+<p>Last, but not least, please consider <a href="https://www.openbsd.org/donations.html">supporting OpenBSD</a>! Even if you don't use OpenBSD on a daily basis, but perhaps make use of <a href="https://www.openssh.com/">OpenSSH</a> on Linux, then you're really using software from the OpenBSD project. Consider making a small, but steady donation to support the further development of all the great software the OpenBSD developers make!</p>
+
+<h2 id="the-network">The network</h2>
+<p>A router is basically a device that regulate network traffic between two or more separate networks. The router will ensure that network traffic intended for the local network doesn't run out into the wild on the Internet, and traffic on the Internet, that is not intended for your local network, stays on the Internet.</p>
+<p class="info info-blue" style="font-size:initial;"><b>NOTE:</b><br>A router is sometimes also referred to as a gateway, which generally is alright, but in truth a real gateway joins dissimilar systems, while a router joins similar networks. An example of a gateway would be a device that joins a PC network with a telecommunications network.</p>
+<p>In this tutorial we're building a router and we have 4 networks of the same type to work with. One is the Internet and the other three are the internally segmented local area networks (LANs). Some people prefer to work with virtual LANs, but in this tutorial we're going to use the quad port NIC from the illustration above. You can achieve the same result by using multiple one port NICs if you prefer that, you just have to make sure that you have enough room and free PCI slots on the motherboard. You can also use the Ethernet port on the motherboard itself, but it depends on the driver and support for the device. I have had no problems using the Realtek PCI gigabit Ethernet controller that normally comes with many motherboards even though I recommend Intel over Realtek.</p>
+<p>Of course you don't have to segment the network into several parts if you don't need that, and it will be very easy to change the settings from this guide, but I have decided to use this approach in order to show you how you can protect your children by segmenting their network into a separate LAN that not only gets ad and porn blocking using DNS blocking (all the segments gets that), but you can even whitelist the parts of the Internet you want them to have access to. The last part about whitelisting is difficult and generally not recommended unless your children requires only very limited access, but it is doable with some work, and the guide is going to show you one way you can do that.</p>
+<p>This is an illustration of the network we're going to setup:</p>
+<pre class="no-style"><code>
+                       Internet
+                          |
+                    xxx.xxx.xxx.xxx
+                    ISP Modem (WAN)
+                      10.24.0.23
+                          |
+                       OpenBSD
+                      10.24.0.50
+                  (router/firewall)
+                          |
+     -------------------------------------------
+     |                    |                    |
+    NIC1                 NIC2                 NIC3
+192.168.1.1          192.168.2.1          192.168.3.1
+LAN1 switch          LAN2 switch          LAN3 switch
+     |                    |                    |
+     -- 192.168.1.x       -- 192.168.2.x       -- 192.168.3.2
+     |  Grown-up PC       |  Child PC1         |  Public web server
+                          |
+                          -- 192.168.2.x
+                          |  Child PC2
+</code></pre>
+<p>The IP addresses that begins with 10.24.0 are whatever IP addresses your ISP router or modem gives you, it may be something very different. The IP addresses beginning with 192.168 are the IP addresses that we're going to use in the guide for our local area network (LAN).</p>
+<p>The guide does not deal with any kind of wireless connectivity. Wireless chip firmware is notoriously buggy and exploitable and I recommend you don't use any kind of wireless connectivity, if you can do without. If you do require wireless connectivity I strongly recommend that you disable wireless access from the ISP modem or router completely (if possible), and then buy the best wireless router you can find and put it behind the firewall in an isolated segment instead. That way should your wireless device ever be compromised you can better control the outcome and limit the damage. You can further setup the wireless router such that any devices connected to it have their own IPs that pass directly through the wireless router, but at the same time block traffic directly originating from the wireless router itself. That way you can prevent the wireless router from "phoning home". You can also get a wireless adapter supported by OpenBSD and have your OpenBSD router run as the actual access point, however I much prefer to segment the wireless part to either a separate wireless router or another OpenBSD machine serving as a wireless access point behind the firewall itself.</p>
+<p class="info info-blue" style="font-size:initial;"><b>NOTE:</b><br>
+At present, as far as I know, none of the OpenBSD wireless drivers are fully without problems yet.</p>
+
+<h3 id="setting-up-the-network">Setting up the network</h3>
+<p>The first thing we'll setup is the different NICs on our OpenBSD router. On my particular machine I have disabled the NIC that is build into the motherboard via the BIOS and I am only going to use the four port Intel knockoff NIC.</p>
+<p>If you're following this tutorial and only want a basic firewall then you need at least two separate NICs.</p>
+<p>Before we begin make sure you have read and understood the different options in <a href="https://man.openbsd.org/hostname.if">hostname.if</a> man page.</p>
+<p>Since I am using Intel the <a href="https://man.openbsd.org/em">em</a> driver is the one OpenBSD loads and each port on the NIC is listed as a separate card. This means that each card is listed with <code>emX</code> where X is the actual number of the port on the given card.</p>
+<p>A <code>dmesg</code> lists my NIC with the four ports like this:</p>
+<pre><code class="command"># dmesg</code>
+<code>em0 at pci2 dev 0 function 0 "Intel I350" rev 0x01: msi, address a0:36:9f:a1:66:b8
+em1 at pci2 dev 0 function 1 "Intel I350" rev 0x01: msi, address a0:36:9f:a1:66:b9
+em2 at pci2 dev 0 function 2 "Intel I350" rev 0x01: msi, address a0:36:9f:a1:66:ba
+em3 at pci2 dev 0 function 3 "Intel I350" rev 0x01: msi, address a0:36:9f:a1:66:bb
+</code></pre>
+<p>This shows that my card is recognized as an Intel I350-T4 PCI Express Quad Port Gigabit NIC.</p>
+<p>The next thing is to figure out which port that physically matches the number listed above. You can do that by manually plugging in an Ethernet wire, coming from an active (turned on) switch, modem or router, into each port, one at a time, in order to see which port gets activated and then note that down somewhere.</p>
+<p>You can check the activity status with the <code>ifconfig</code> command. A port without the Ethernet cable will be listed as <code>no carrier</code> in the <code>status</code> field, whereas the port with the cable attached will be listed as <code>active</code>. Like this:</p>
+<pre><code class="command"># ifconfig</code>
+<code>em1: flags=8843&lt;UP,BROADCAST,RUNNING,SIMPLEX,MULTICAST&gt; mtu 1500
+        lladdr a0:36:9f:a1:66:b9
+        index 2 priority 0 llprio 3
+        media: Ethernet autoselect (none)
+        <b>status: active</b>
+em2: flags=8843&lt;UP,BROADCAST,RUNNING,SIMPLEX,MULTICAST&gt; mtu 1500
+        lladdr a0:36:9f:a1:66:ba
+        index 3 priority 0 llprio 3
+        media: Ethernet autoselect (none)
+        <b>status: no carrier</b>
+</code></pre>
+<p>We're going to use the <code>em0</code> port as the one we connect to the modem or router from the ISP, i.e. the Internet. In my specific case I have a public IP address from my ISP, and you're going to need that if you want to run something like a web server from your home, but in case you don't need that you can setup the card with DHCP.</p>
+<p>In my case I need to put in a specific fixed IP address for <code>em0</code> which then gets traffic forwarded by my ISP from my public IP. To do that I set the <code>em0</code> card with the following information:</p>
+<pre><code class="command"># echo 'inet 10.24.0.50 255.255.254.0 NONE' &gt; /etc/hostname.em0</code></pre>
+<p>If you don't need a public IP address and you get your IP from your ISP via DHCP, then just enter <code>dhcp</code> instead:</p>
+<pre><code class="command"># echo 'dhcp' &gt; /etc/hostname.em0</code></pre>
+<p>Then I'll set the rest of the NIC ports up with the IP addresses I have previously illustrated.</p>
+<pre><code class="command"># echo 'inet 192.168.1.1 255.255.254.0 NONE' &gt; /etc/hostname.em1
+# echo 'inet 192.168.2.1 255.255.254.0 NONE' &gt; /etc/hostname.em2
+# echo 'inet 192.168.3.1 255.255.254.0 NONE' &gt; /etc/hostname.em3
+</code></pre>
+<p>Take a look at <a href="https://man.openbsd.org/hostname.if">hostname.if</a> for more information.</p>
+<p>Then I need to setup the IP of the ISP gateway. Depending on the setup of your ISP this might be another IP address than the one from the ISP modem or router. If you don't add the <code>/etc/mygate</code> then no default gateway is added to the <a href="https://en.wikipedia.org/wiki/Routing_table">routing table</a>. You don't need the <code>/etc/mygate</code> if you get your IP from your ISP modem or router via DHCP. If you use the <code>dhcp</code> directive in any <code>hostname.ifX</code> then the entries in <code>/etc/mygate</code> will be ignored. This is because the card that get its IP address from a DHCP server will also get gateway routing information supplied.</p>
+<p>Last, but not least, we need to enable IP forwarding. IP forwarding is the process that enables IP packets to travel between network interfaces on the router. By default OpenBSD will not forward IP packets between various network interfaces. In other words, routing functions (also known as gateway functions) are disabled.</p>
+<p>We can enable IP forwarding using the following commands:</p>
+<pre><code class="command"> # sysctl net.inet.ip.forwarding=1
+# echo 'net.inet.ip.forwarding=1' &gt;&gt; /etc/sysctl.conf</code></pre>
+<p>Now OpenBSD will be able to forward IPv4 packets from one NIC to another. Or, as in our specific case with the four port NIC, from one port to another. Take a look at the man page if you need IPv6.</p>
+
+<h2 id="dhcp">DHCP</h2>
+<p>Now we're ready to setup the <a href="https://en.wikipedia.org/wiki/Dynamic_Host_Configuration_Protocol">Dynamic Host Configuration Protocol (DHCP)</a> service we will be running for our different PCs and devices attached to the different LANs. Before we begin make sure you have read and understood the different options in the <a href="https://man.openbsd.org/dhcpd.conf">dhcpd.conf</a> man page.</p>
+<p>We have the option to bind specific IP addresses to specific PCs or devices that connect to our different LAN ports. This is needed if we want to forward any traffic from the Internet to something like a web server. We can bind a specific IP address to a specific PC via the <a href="https://en.wikipedia.org/wiki/MAC_address">MAC address</a> on the NIC of the relevant machine.</p>
+<p>In this case I'll reserve all IP addresses ranging from 10 to 254 for the DHCP, while I'll leave the few left overs for any possible fixed addresses I might need.</p>
+<p>Edit <code>/etc/dhcpd.conf</code> with your favorite text editor and set it up to suit your needs.</p>
+<pre><code>subnet 192.168.1.0 netmask 255.255.255.0 {
+    option domain-name-servers 192.168.1.1;
+    option routers 192.168.1.1;
+    range 192.168.1.10 192.168.1.254;
+}
+subnet 192.168.2.0 netmask 255.255.255.0 {
+    option domain-name-servers 192.168.2.1;
+    option routers 192.168.2.1;
+    range 192.168.2.10 192.168.2.254;
+}
+subnet 192.168.3.0 netmask 255.255.255.0 {
+    option domain-name-servers 192.168.3.1;
+    option routers 192.168.3.1;
+    range 192.168.3.10 192.168.3.254;
+    host web.example.com {
+        fixed-address 191.168.3.2;
+        hardware ethernet 61:20:42:39:61:AF;
+        option host-name "webserver";
+    }
+}
+</code></pre>
+<p>The <code>option domain-name-servers</code> line specifies the DNS server we will be running on our router.</p>
+<p>Also, if you don't want to segment the network into the different parts, but only want to have one LAN then you can just leave out the other subnets so you just have this:</p>
+<pre><code>subnet 192.168.1.0 netmask 255.255.255.0 {
+    option domain-name-servers 192.168.1.1;
+    option routers 192.168.1.1;
+    range 192.168.1.10 192.168.1.254;
+}
+</code></pre>
+<p>Then we just need to make sure we enable and start the <code>dhcpd</code> service:</p>
+<pre><code class="command"># rcctl enable dhcpd
+# rcctl start dhcpd</code></pre>
+
+<h2 id="a-packet-filtering-firewall">PF - A packet filtering firewall</h2>
+<p>A packet-filtering firewall examines each packet that crosses the firewall and decides whether to accept or deny individual packets, based on examining fields in the packet's IP and protocol headers, according to the set of rules that you specify.</p>
+<p>Packet filters work by inspecting the source and destination IP and port addresses contained in each Transmission Control Protocol/Internet Protocol (TCP/IP) packet. TCP/IP ports are numbers that are assigned to specific services that identify which service each packet is intended for.</p>
+<p>A common weakness in simple packet filtering firewalls is that the firewall examines each packet in isolation without considering what packets have gone through the firewall before and what packets may follow. This is called a "stateless" firewall. Exploiting a stateless packet filter is fairly easy. PF from OpenBSD is <b>not</b> a stateless firewall, it is a <a href="https://en.wikipedia.org/wiki/Stateful_firewall">stateful firewall</a>.</p>
+<p>A stateful firewall keeps track of open connections and only allows traffic that either matches an existing connection or opens a new allowed connection. When state is specified on a matching rule the firewall dynamically generates internal rules for each anticipated packet being exchanged during the session. It has sufficient matching capabilities to determine if a packet is valid for a session. Any packets that do not properly fit the session template are automatically rejected.</p>
+<p>One advantage of stateful filtering is that it is very fast. It allows you to focus on blocking or passing new sessions. If a new session is passed, all its subsequent packets are allowed automatically and any impostor packets are automatically rejected. If a new session is blocked, none of its subsequent packets are allowed. Stateful filtering also provides advanced matching abilities capable of defending against the flood of different attack methods employed by attackers.</p>
+<p>Network Address Translation (NAT) enables the private network behind the firewall to share a single public IP address. NAT allows each computer in the private network to have Internet access, without the need for multiple Internet accounts or multiple public IP addresses. NAT will automatically translate the private network IP address for computers or devices on the network to the single public IP address as packets exit the firewall bound for the Internet. NAT also performs the reverse translation for returning packets. With NAT you can redirect specific traffic, usually determined by port number or a range of port numbers, coming in on your public IP address from the Internet to a specific server or servers located somewhere in your local network.</p>
+<p><a href="https://man.openbsd.org/pf">Packet Filter (PF)</a> is OpenBSD's firewall system for filtering TCP/IP traffic and doing NAT. PF is also capable of normalizing and conditioning TCP/IP traffic, as well as providing bandwidth control and packet prioritization.</p>
+<p>PF is actively maintained and developed by the entire OpenBSD team.</p>
+
+<h2 id="pf-setup">PF setup</h2>
+<p>Before we begin I assume that you have read both the <a href="https://www.openbsd.org/faq/pf/index.html">PF - User's guide</a> and the <a href="https://man.openbsd.org/pf.conf">pf.conf</a> man page, especially the man page is very important. Even if you don't understand all the different options make sure you read the documentation! For a complete and in-depth view of what PF can do, take a look at the <a href="https://man.openbsd.org/pf">pf</a> man page.</p>
+<p>Also, let me start by saying that even though the syntax for PF is very readable, it is very easy to make mistakes when writing firewall rules. Even senior and experienced system administrators makes mistakes when writing firewall rules.</p>
+<p>Writing firewall rules requires that you carefully plan out your goals, understand how to implement the different rules in order to achieve the desired results, and at the same time take your precautions against doing it wrong and accidentally logging yourself out :) I think we've all done that at one time or another, whether in haste, tiredness, or just by mistake.</p>
+
+<h3 id="clarifications">Clarifications</h3>
+<p>I want to start by clarifying some of the common default settings and keywords in PF.</p>
+<p>The format is either that we we filter on the destination:</p>
+<pre><code><b>from</b> <i>source IP</i> <b>to</b> <i>destination IP</i> <b>[on]</b> <i> port</i></code></pre>
+<p>Or it is filtering on the source:</p>
+<pre><code><b>from</b> <i>source IP</i> <b>[on]</b> <i>port</i> <b>to</b> <i>destination</i></code></pre>
+<p>Please note that the <code>[on]</code> part is not part of the syntax.</p>
+
+<ul style="list-style-type:none;">
+<li><code>quick</code>
+    <ul style="list-style-type:none;">
+        <li><p>If a packet matches a <code>pass</code>, <code>block</code> or <code>match</code> rule, with the <code>quick</code> modifier, the packet <b>is passed without inspecting subsequent filter rules</b>. The rule with the <code>quick</code> modifier becomes the last matching rule.</p></li>
+    </ul>
+</li>
+<li><code>keep state</code>
+    <ul style="list-style-type:none;">
+        <li><p>You don't need to specify the <code>keep state</code> modifier for specific <code>pass</code> or <code>block</code> rules. The first time a packet matches a <code>pass</code> or <code>block</code> rule, <b>a state entry is created by default</b>.</p>
+        <p>Only if no rule matches a packet, the default action is <b>to pass the packet without creating a state</b>.</p></li>
+    </ul>
+</li>
+<li><code>on</code> interface/<code>any</code>
+    <ul style="list-style-type:none;">
+        <li><p>This rule applies only to packets <b>coming in on</b>, or <b>going out through</b>, this particular interface or interface group.</p>
+            <p>The <code>on any</code> modifier - will match any existing interface except loopback ones.</p></li>
+    </ul>
+</li>
+<li><code>inet</code>/<code>inet6</code>
+    <ul style="list-style-type:none;">
+        <li><p>The <code>inet</code> and <code>inet6</code> modifiers means that this rule applies only to packets <b>coming in on</b>, or <b>going out through</b>, this particular routing domain, meaning IPv4 or IPv6.</p>
+            <p>You can apply rules to specific routing domains without specifying the NIC. In that case the rule will match all traffic of that particular nature on all NICs. By specifying <code>inet</code> you explicitly address IPv4 traffic only.</p></li>
+    </ul>
+</li>
+<li><code>proto</code>
+    <ul style="list-style-type:none;">
+        <li><p>Protocol limiting is done using the <code>proto</code> modifier. A rule applies <b>only to packets of this protocol</b>, other protocols are not affected. You can lookup protocols in <code>/etc/protocols</code>. Common protocols are <a href="https://en.wikipedia.org/wiki/Internet_Control_Message_Protocol">ICMP</a>, <a href="https://en.wikipedia.org/wiki/Transmission_Control_Protocol">TCP</a>, and <a href="https://en.wikipedia.org/wiki/User_Datagram_Protocol">UDP</a>.</p></li>
+    </ul>
+</li>
+<li><code>in</code> and <code>out</code>
+    <ul style="list-style-type:none;">
+        <li><p>This is one of the easiest parts of traffic direction to get wrong. A packet always <b>comes in on</b>, or <b>goes out through</b>, the Ethernet port on the Ethernet interface. <code>in</code> and <code>out</code> apply to incoming and outgoing packets through the physical Ethernet port where the Ethernet cable is attached. <b>If neither are specified, the rule will match packets in both directions.</b></p>
+            <p><code>in</code> and <code>out</code> is <b>never</b> used to deal with traffic going from one NIC to another NIC, that is done with network address translation (NAT), using the options <code>nat-to</code> and <code>rdr-to</code>. <code>in</code> and <code>out</code> only deals with traffic <b>in</b> and <b>out</b> from the physical Ethernet port on the same card.</p></li>
+    </ul>
+</li>
+<li><code>from</code> and <code>to</code>
+    <ul style="list-style-type:none;">
+        <li><p>The <code>from</code> and <code>to</code> rule modifiers apply <b>only to packets with the specified source and destination addresses and ports</b>. Both the hostname or IP address, port, and OS specifications are optional.</p>
+        <p>When we're dealing with a router with multiple NICs it's easy to think like this: <i>I want to pass in packets from the external interface (the NIC attached to the Internet) and then have them go to the first LAN interface and from there out to a specific PC on that LAN</i>, meaning we follow the "trail of data" in our minds, and then write that out into something like this: <code>pass in on $ext_if from $ext_if to $p_lan port 80</code>. But this will not make the HTTP traffic "magically" appear on port 80 on the LAN with a PC attached with a specific IP address. We would also require a specific <code>pass out</code> rule and furthermore need to determine exactly on which machine we want the data to end up. Unless you are really dealing with a very specific requirement, you never need such rules in your ruleset! The <code>antispoof</code> and <code>scrub</code> features of PF will protect your internal network very well and with a basic setup of correct network address translation (NAT), with the <code>nat-to</code> option, and redirection with the <code>rdr-to</code> option, PF will handle the packages from the inside to the outside and vice versa.</p>
+        <p>The <code>all</code> parameter is equivalent to writing <code>from any to any</code>. <b>Without explicitly declaring the direction, the default is</b> <code>from any to any</code>. This rule: <code>pass in on $p_lan proto udp to port dns</code> translates into this: <code>pass in on em3 inet proto udp from any to any port = 53</code></p>
+        <p>There is also no need to use <code>to any port dns</code>, the <code>any</code> part is the default. You do however need the <code>to port dns</code></p></li>
+    </ul>
+</li>
+<li><code>nat-to</code> and <code>rdr-to</code>
+    <ul style="list-style-type:none;">
+        <li><p>Network address translation (NAT) options <b>modify either the source or destination address and port of the packets associated with a stateful connection</b>. PF modifies the specified address and/or port in the packet and recalculates IP, TCP, and UDP checksums as necessary.</p>
+            <p>A <code>nat-to</code> option specifies <b>that IP addresses are to be changed as the packet traverses the given interface</b>. This technique allows one or more IP addresses on the translating host (the OpenBSD router) to support network traffic for a larger range of machines on an <b>inside</b> network, i.e. a LAN.</p>
+            <p>The <code>nat-to</code> option is usually applied outbound, meaning <b>redirected from the inside network to the Internet</b>. <code>nat-to</code> to a local IP address <b>is not supported</b>.</p>
+            <p>The <code>rdr-to</code> option is usually applied inbound, meaning <b>redirected from the Internet into the inside network</b>.</p></li>
+    </ul>
+</li>
+</ul>
+<p class="info info-red" style="font-size:initial;"><b>WARNING:</b><br>Please note that each time a packet processed by the packet filter comes in on or goes out through an interface, the filter rules are evaluated in sequential order, from first to last. For <code>block</code> and <code>pass</code>, <b>the last matching rule decides what action is taken</b>. If no rule matches the packet, the default action is to pass the packet without creating a state. For <code>match</code>, rules are evaluated <b>every time they match</b>.</p>
+
+<h3 id="pf-domain-name-resolution">Domain name or hostname resolution</h3>
+<p>If you decide to use hostnames and/or domain names in your PF setup you need to know that <b>all domain name and hostname resolution is done at ruleset load-time</b>. This means that when the IP address of a host or a domain name changes, the ruleset <b>must be reloaded for the change to be reflected in the kernel</b>. It is not such that each time a specific rule runs, that has a hostname or domain name listed, that PF will do a new DNS lookup for that particular hostname or domain name. DNS lookup only happens when the ruleset is loaded.</p>
+<p>This also means that you must make sure that the DNS server you're using is up and running <b>before</b> PF is started, otherwise PF will fail at loading the ruleset because it cannot resolve the hostname or domain name.</p>
+<p>On OpenBSD PF starts <b>before</b> Unbound or any other installed DNS server, which is the correct thing to do from a security perspective.</p>
+<p>I advice that you avoid using hostnames or domain names when using PF rules and stick to IP addresses if possible. It is possible to use hostnames and domain names, but direct IP addressing is by far the easiest and safest.</p>
+
+<h3 id="the-ruleset">The ruleset</h3>
+<p>It is a good idea to test out your ruleset on a test machine. There is almost always more than one way to achieve the same result. Also, never write new rulesets on a remote device you are actively logged into unless you know what you're doing. Getting logged out of a remote machine is never any fun.</p>
+<p>Try to figure out how you can keep your rules as clear and as short as possible, using default values whenever possible. Yet, don't be afraid to specify modifiers that makes the rules more clear to understand, even though they are identical to the default values. A default value might be <code>any to any</code>, and you can leave that out then, but it might be easier to understand a particular rule when it actually says <code>any to any</code> in the text of the configuration file.</p>
+<p>You can always parse the ruleset and check for errors without it being deployed with the command <code>pfctl -nf /etc/pf.conf</code>. Once you have loaded a ruleset with the command <code>pfctl -f /etc/pf.conf</code> you can view how the ruleset has been translated by PF with the <code>pfctl -s rules</code> command, which I advice that you to use regularly.</p>
+<p>I prefer to keep my rulesets organized with sections and comments so I'll do the same in this example.</p>
+<p>Use your favorite text editor and open up the file <code>/etc/pf.conf</code>.</p>
+<p>First we setup some macros to better remember what NICs we use for what. Using macros for the NICs also makes it easy to change the driver name of the card if we ever buy a new card, or multiple new cards.</p>
+<pre><code>#---------------------------------#
+# Macros
+#---------------------------------#
+
+ext_if="em0" # External NIC connected to the ISP modem (Internet).
+g_lan="em1"  # Grown-ups LAN.
+c_lan="em2"  # Children's LAN.
+p_lan="em3"  # Public LAN.
+</code></pre>
+<p>Next we set up a table for non-routable IP address. We do that because a very common network misconfiguration is the kind that lets traffic with non-routable addresses out to the Internet. We will use the table in our ruleset to block any attempt to initiate contact to non-routable addresses through the routers external interface.</p>
+<pre><code>#---------------------------------#
+# Tables
+#---------------------------------#
+
+# This is a table of non-routable private addresses.
+table &lt;martians&gt; { 0.0.0.0/8 10.0.0.0/8 127.0.0.0/8 169.254.0.0/16     \
+                   172.16.0.0/12 192.0.0.0/24 192.0.2.0/24 224.0.0.0/3 \
+                   192.168.0.0/16 198.18.0.0/15 198.51.100.0/24        \
+                   203.0.113.0/24 }
+</code></pre>
+<p class="info info-red" style="font-size:initial;"><b>WARNING:</b><br> Please note that macros and tables always goes at the top of <code>/etc/pf.conf</code>.</p>
+<p>Then we begin with a <b>default blocking policy</b> and setup a couple of protective features.</p>
+<pre><code>#---------------------------------#
+# Protect and block by default
+#---------------------------------#
+set skip on lo0
+match in all scrub (no-df random-id max-mss 1440)
+
+# Spoofing protection for all interfaces.
+antispoof quick for { $g_lan $c_lan $p_lan }
+block in from no-route
+block in quick from urpf-failed
+
+# Block non-routable private addresses.
+# We use the "quick" parameter here to make this rule the last.
+block in quick on $ext_if from &lt;martians&gt; to any
+block return out quick on $ext_if from any to &lt;martians&gt;
+
+# Default blocking all traffic in on all LAN NICs from any PC or device.
+block return in on { $g_lan $c_lan $p_lan }
+
+# Default blocking all traffic in on the external interface from the Internet.
+# Let's log that too.
+block drop in log on $ext_if
+
+# Default allow all NICs to pass out IPv4 data through the Ethernet port.
+pass out inet
+</code></pre>
+<p><code>scrub</code> enables a "clean up" of packet content, causing fragmented packets to be assembled. <code>scrub</code> also provides some protection against some kinds of attacks based on incorrect handling of packet fragments.</p>
+<p>The <code>antispoof</code> modifier is a very important protection. Spoofing is when someone fakes an IP address. The <code>antispoof</code> modifier expands to a set of filter rules that will block all traffic with a source IP from the network, directly connected to the specified interface, from entering the system through any other interface. This is sometimes referred to as "bleeding over" or "bleeding through".</p>
+<p>The above <code>antispoof</code> directive is translated by PF into the following:</p>
+<p>block drop in quick on ! em1 inet from 192.168.1.0/24 to any<br>
+block drop in quick inet from 192.168.1.1 to any<br>
+block drop in quick on ! em2 inet from 192.168.2.0/24 to any<br>
+block drop in quick inet from 192.168.2.1 to any<br>
+block drop in quick on ! em3 inet from 192.168.3.0/24 to any<br>
+block drop in quick inet from 192.168.3.1 to any<br>
+</p>
+<p>If we take, e.g., the <code>em1</code> NIC rule <code>block drop in quick on ! em1 inet from 192.168.1.0/24 to any</code> then that means: <i>block any traffic from the network with IP addresses ranging from 192.168.1.1 to 192.168.1.255, that doesn't originate from the em1 interface itself, and that is going anywhere</i>. Since the <code>em1</code> interface is the NIC in charge of all IP addresses in that specific range, then no traffic with such an IP address should originate from any other NIC.</p>
+<p class="info info-red" style="font-size:initial;"><b>WARNING:</b><br>Usage of <code>antispoof</code> should be <b>restricted</b> to interfaces that have been assigned an IP address, meaning that if you have unused NICs, or ports on a NIC, make sure to assign an IP address to each or don't include these in the <code>antispoof</code> option.</p>
+<p>The IP addresses in the <code>martians</code> macro constitutes the <a href="https://tools.ietf.org/html/rfc1918">RFC1918</a> addresses which are not to be used on the Internet. Traffic to and from such addresses is dropped on the routers external interface.</p>
+<p>Now we get to the LAN segment for the grown-ups in the house.</p>
+<pre><code>#---------------------------------#
+# Grown-ups LAN Setup
+#---------------------------------#
+
+# Allow any PC on the grown-ups LAN to send data in through the NICs Ethernet
+# port.
+pass in on $g_lan
+
+# Always block DNS queries not addressed to our DNS server.
+block return in quick on $g_lan proto { udp tcp } to ! $g_lan port 53
+
+# Block the network printer from "phoning home".
+block in quick on $g_lan from 192.168.1.8
+</code></pre>
+<p>In this example we have a network printer attached to the grown-ups network that we don't want to access the Internet or anywhere else, just in case it has some kind of spying firmware. We do that by saying, <i>block all data coming in on em1 from the IP address 192.168.1.8 going to any IP address</i>.</p>
+<p>Also we make sure that all DNS requests on port 53 are always blocked if they are not addressed to our DNS server.</p>
+<p class="info info-blue" style="font-size:initial;"><b>NOTE:</b><br>Previously I used to redirect all traffic on port 53 not addressed to our DNS server back to our DNS server. I did that because when we block the DNS request on port 53, whether with a <code>return</code> or <code>drop</code>, the request will timeout on the client, which will make most clients cause a delay in the reply. I have since changed it to a block because I believe that it is the more correct approach. All clients need to realize that communication on port 53 is blocked, unless it is addressed to our DNS server. This is also important when we're troubleshooting our network. If we get a redirected reply from our DNS server we might not notice that we have been redirected.</p>
+<p class="info info-blue" style="font-size:initial;"><b>NOTE:</b><br>DNS primarily uses the User Datagram Protocol (UDP) on port number 53 to serve requests, but when the length of the answer exceeds 512 bytes and both client and server support EDNS, larger UDP packets are used. Otherwise, the query is sent again using the Transmission Control Protocol (TCP). Some DNS resolver implementations use TCP for all queries. As such we need both the UDP and TCP protocols in rule for port 53.</p>
+<p>The children's part of the LAN is very similar (a more restricted setup is demonstrated in the <a href="#whitelist">children's whitelist</a> section).</p>
+<pre><code>#---------------------------------#
+# Children's LAN Setup
+#---------------------------------#
+
+# Allow any PC on the children's LAN to send data in through the NICs Ethernet
+# port.
+pass in on $c_lan
+
+# Always block DNS queries not addressed to our DNS server.
+block return in quick on $c_lan proto { udp tcp} to ! $c_lan port 53
+</code></pre>
+<p>Then we get to the LAN with a publicly facing web server. Since we have a publicly facing web server we set up a couple of restrictions. Should the web server ever get compromised the intruder will have a hard time figuring out what else is located on our internal network.</p>
+<p>We block all access except for DHCP, in order for the web server to get an IP address from our router, and then <b>only manually</b> open other things up whenever we need to update the machine or do something else. I have commented out the options we need, when we need to open things up, leaving the restricting parts enabled. When you need to update the server you open up for DNS and general access to the Internet.</p>
+<p class="info info-blue" style="font-size:initial;"><b>NOTE:</b><br>Rather than manually changing the ruleset each time we need to open up for the web server to be updated, we can also use an <a href="https://man.openbsd.org/pf.conf#ANCHORS">anchor</a>, but for simplicity's sake we don't do that here.</p>
+<pre><code>#---------------------------------#
+# Public LAN Setup
+#---------------------------------#
+
+# Allow access to DHCP.
+pass in on $p_lan inet proto udp from any port 67
+
+# Allow access to the Internet by removing the comment.
+# This rule will also block access to our two other segments, the grown-ups LAN
+# and the children's LAN.
+# pass in on $p_lan to { ! 192.168.1.0/24 ! 192.168.2.0/24 }
+
+# Always block DNS queries not addressed to our DNS server.
+block return in quick on $p_lan proto { udp tcp} to ! $p_lan port 53
+</code></pre>
+<p>In this setup, the only thing that the web server can do is to get an IP address from the router. It cannot ping or otherwise contact any other machine on our internal network, and it cannot access the Internet unless the comment is removed from the rule <code>pass in on $p_lan to { ! 192.168.1.0/24 ! 192.168.2.0/24 }</code>.</p>
+<p>These restrictions doesn't mean that the web server cannot respond to oncoming requests. The reason for this is that we will add a rule in our redirect section in a moment that allows clients on the Internet to access our publicly faced web server, when this happens the response from the web server will become a part of the state established by the original connection from the client from outside, which the web server will then be permitted to respond to.</p>
+<p>Now we come to the network address translation (NAT). This is where the router routes packages from one segment of the network to another, in this specific case from our internal network to the Internet outside, and then any reply coming from the Internet outside, back in to the originator of the transmission. I prefer the <code>:network</code> parameter, which translates to the network(s) attached to the interface, and I prefer to be specific with one rule for each relevant segment.</p>
+<pre><code>#---------------------------------#
+# NAT
+#---------------------------------#
+
+pass out on $ext_if inet from $g_lan:network to any nat-to ($ext_if)
+pass out on $ext_if inet from $c_lan:network to any nat-to ($ext_if)
+pass out on $ext_if inet from $p_lan:network to any nat-to ($ext_if)
+</code></pre>
+<p>PF will keep a track of all traffic and when, e.g., a web browser on the grown-ups LAN requests a web page on some website on the Internet, the response from the web server on the Internet gets routed through our external interface through to our internal grown-ups LAN interface and then straight to the PC that originated the request.</p>
+<p>Last we get to the redirecting part of our ruleset. This is where we allow traffic from the Internet outside in to our publicly facing web server on the public LAN. You should, of course, leave this part out if you don't have any publicly facing servers that requires redirection. In this example I'm only allowing IPv4 traffic.</p>
+<pre><code>#---------------------------------#
+# Redirects
+#---------------------------------#
+
+# Our web server - let the Internet access it.
+pass in on $ext_if inet proto tcp to $ext_if port { 80 443 } rdr-to 192.168.3.2
+</code></pre>
+<p class="info info-red" style="font-size:initial;"><b>WARNING:</b><br>Redirects always goes last in the ruleset!</p>
+<p>That's it for our basic setup of firewall rules.</p>
+
+<h3 id="whitelist">The children's whitelist</h3>
+<p>If you want to block the entire Internet for the children, except for perhaps a few websites or perhaps a few game servers, you need to figure out what the IP addresses of those services are and create a whitelist using those IP addresses.</p>
+<p>If it is a single website with a single IP address it is very easy and you can do it with this rule placed last in the children's block (you need to replace the x.x.x.x part with the relevant IP address):</p>
+<pre><code>#---------------------------------#
+# Children's LAN Setup
+#---------------------------------#
+
+# Allow any PC on the children's LAN to only reach x.x.x.x.
+pass in on $c_lan to x.x.x.x
+
+# Always block DNS queries not addressed to our DNS server.
+block return in quick on $c_lan proto { udp tcp} to ! $c_lan port 53
+</code></pre>
+<p>If the website has multiple IP addresses you need to figure out what those are. Sometimes a domain name lookup can reveal all the relevant IP addresses at once. At other times you need to repeat the lookup multiple times at different intervals in the day in order to get the full range of IP addresses. You can do that by setting up an automated script.</p>
+<p>Sometimes you may need to contact the relevant company and ask if you can get the IP range for your whitelist (some companies keep the information public, others refuse to release the information out of fear for malicious usage). Once you have determined what the IP range is you can put those into a PF <code>table</code> and then use that.</p>
+<p>In this example we add a new table to the table section of the rules and then change the settings in the children's rules.</p>
+<pre><code>#---------------------------------#
+# Tables
+#---------------------------------#
+
+# This is a table of non-routable private addresses.
+table &lt;martians&gt; { 0.0.0.0/8 10.0.0.0/8 127.0.0.0/8 169.254.0.0/16     \
+                   172.16.0.0/12 192.0.0.0/24 192.0.2.0/24 224.0.0.0/3 \
+                   192.168.0.0/16 198.18.0.0/15 198.51.100.0/24        \
+                   203.0.113.0/24 }
+
+# Whitelist for the children.
+table &lt;whitelist&gt; { x.x.x.x y.y.y.y z.z.z.z }
+</code></pre>
+<p>And then in the children's section:</p>
+<pre><code>#---------------------------------#
+# Children's LAN Setup
+#---------------------------------#
+
+# Allow any PC on the children's LAN to only access whitelisted IPs.
+pass in on $c_lan to &lt;whitelist&gt;
+
+# Always block DNS queries not addressed to our DNS server.
+block return in quick on $c_lan proto { udp tcp} to ! $c_lan port 53
+</code></pre>
+<p>It is not always possible to get all the needed IP addresses into a whitelist all at once, but by monitoring the network, using e.g. <a href="https://man.openbsd.org/tcpdump">tcpdump</a>, when the game is trying to access a server, you can put together a working list, bit by bit.</p>
+
+<h4 id="persistent-table">Using a persistent table</h4>
+<p>Another approach to IP collecting is to use a <a href="https://man.openbsd.org/pf.conf#TABLES">persistent table</a> in combination with <code>/etc/rc.local</code> and domain name lookups. <code>/etc/rc.local</code> is only run <b>after</b> PF is started and as such problems with domain name resolving will not cause PF any problems.</p>
+<p>Should you want to run with the persistent table solution you can do it by adding a persistent table to the table section in <code>/etc/pf.conf</code>:</p>
+<pre><code>table &lt;whitelist&gt; persist</code></pre>
+<p>In the children's section you still need to pass data in that goes to the whitelist like in the above:</p>
+<pre><code>pass in on $c_lan to &lt;whitelist&gt;</code></pre>
+<p>Then in <code>/etc/rc.local</code> you can add the following command:</p>
+<pre><code>pfctl -t whitelist -T add foo.bar</code></pre>
+<p>Where <code>foo.bar</code> is the domain you want PF to lookup.</p>
+<p>Whenever your kids cannot get access because the valid IP addresses might have changed, you can login to the firewall and then manually update the table with more IP addresses by running the command manually:</p>
+<pre><code class="command"># pfctl -t whitelist -T add foo.bar</code></pre>
+<p>If you want to see what has been added to the list you can do it with:</p>
+<pre><code class="command"># pfctl -t whitelist -T show</code>
+<code>74.6.143.25
+74.6.143.26
+74.6.231.20
+74.6.231.21
+98.137.11.163
+98.137.11.164
+216.58.208.110
+2001:4998:24:120d::1:0
+2001:4998:24:120d::1:1
+2001:4998:44:3507::8000
+2001:4998:44:3507::8001
+2001:4998:124:1507::f000
+2001:4998:124:1507::f001
+2a00:1450:400e:80e::200e
+</code></pre>
+<p>In the example above I am using IP addresses from yahoo.com.</p>
+<p>Eventually you can add all the IP addresses you collect (before they get flushed) into a physical file as the <code>persist</code> option can take input from a file as well:</p>
+<pre><code>table &lt;whitelist&gt; persist file "/etc/pf-whitelist.txt"</code></pre>
+<p class="info info-blue" style="font-size:initial;"><b>NOTE:</b><br>The file will not get IP addresses added using the <code>add</code> option to <code>pfctl</code>. A persistent table either resides in memory or on a file, but the <code>add</code> option cannot write to disk, only to memory. A persistent table from a file is one you need to manually edit with a text editor.</p>
+
+<h3 id="loading-ruleset">Loading the rules</h3>
+<p>Once you have finished setting up your ruleset you can test it with:</p>
+<pre><code class="command"># pfctl -nf /etc/pf.conf</code></pre>
+<p>If all is well, you load the ruleset by removing the <code>-n</code> option:</p>
+<pre><code class="command"># pfctl -f /etc/pf.conf</code></pre>
+<p>Take a look at the translated result with:</p>
+<pre><code class="command"># pfctl -s rules</code></pre>
+
+<h3 id="logging">Logging and monitoring</h3>
+<p>This is an example output from the PF log of blocked attempts to access the external interface on a setup of mine. I have cleaned out the output a bit and removed some specific data, and 0.0.0.0 is of course not my public IP address, but you already knew that right ;)</p>
+<pre>
+<code class="command"># tcpdump -n -e -ttt -r /var/log/pflog</code>
+<code>23:11:12 rule 14/(match) block in on em0: 45.129.33.4.45980 &gt; 0.0.0.0.3422: S 1501043655:1501043655(0) win 1024
+23:11:12 rule 14/(match) block in on em0: 45.129.33.4.45980 &gt; 0.0.0.0.3481: S 311078394:311078394(0) win 1024
+23:11:31 rule 14/(match) block in on em0: 176.214.44.229.25197 &gt; 0.0.0.0.23: S 2084440900:2084440900(0) win 33620
+23:11:33 rule 14/(match) block in on em0: 45.129.33.4.45980 &gt; 0.0.0.0.3431: S 2774981044:2774981044(0) win 1024
+23:11:43 rule 14/(match) block in on em0: 81.68.114.52.17191 &gt; 0.0.0.0.23: S 1346864438:1346864438(0) win 26375
+23:12:08 rule 14/(match) block in on em0: 193.27.229.26.53865 &gt; 0.0.0.0.443: S 1057596009:1057596009(0) win 1024
+23:12:31 rule 14/(match) block in on em0: 45.129.33.4.45980 &gt; 0.0.0.0.4186: S 1233742605:1233742605(0) win 1024
+23:12:44 rule 14/(match) block in on em0: 74.120.14.70.65509 &gt; 0.0.0.0.9125: S 1836577847:1836577847(0) win 1024 &lt;mss 1460&gt; [tos 0x20]
+23:12:44 rule 14/(match) block in on em0: 45.129.33.4.45980 &gt; 0.0.0.0.4128: S 2112968453:2112968453(0) win 1024
+23:13:15 rule 14/(match) block in on em0: 45.129.33.4.45980 &gt; 0.0.0.0.3669: S 3627248539:3627248539(0) win 1024
+23:13:19 rule 14/(match) block in on em0: 45.129.33.4.45980 &gt; 0.0.0.0.3654: S 3889665614:3889665614(0) win 1024
+23:13:29 rule 14/(match) block in on em0: 45.129.33.129.42239 &gt; 0.0.0.0.4997: S 2249816896:2249816896(0) win 1024
+23:13:37 rule 14/(match) block in on em0: 45.129.33.4.45980 &gt; 0.0.0.0.3612: S 3797528151:3797528151(0) win 1024
+23:14:03 rule 14/(match) block in on em0: 190.207.89.17.64372 &gt; 0.0.0.0.445: S 1097568353:1097568353(0) win 8192 &lt;mss 1460,nop,wscale 2,nop,nop,sackOK&gt; (DF)
+23:14:15 rule 14/(match) block in on em0: 45.129.33.4.45980 &gt; 0.0.0.0.4219: S 2834775769:2834775769(0) win 1024
+23:14:39 rule 14/(match) block in on em0: 45.129.33.4.45980 &gt; 0.0.0.0.3702: S 1855726637:1855726637(0) win 1024
+23:14:39 rule 14/(match) block in on em0: 45.129.33.4.45980 &gt; 0.0.0.0.4210: S 3052103070:3052103070(0) win 1024
+</code></pre>
+<p>As you can see it's quite busy, and I have nothing running that is facing the Internet on that setup.</p>
+<p>You can also monitor PF in real time with:</p>
+<pre><code class="command"># tcpdump -n -e -ttt -i pflog0
+</code></pre>
+
+<h2 id="domain-name-service">DNS</h2>
+<p><a href="https://en.wikipedia.org/wiki/Domain_Name_System#Operation">Domain Name Service (DNS)</a> is used to translate a domain name into an IP address or vise versa. For example, when you type <a href="https://wikipedia.org">wikipedia.org</a> in your web browsers address field, an authoritative DNS server translates the domain name "wikipedia.org" to an IPv4 address such as 91.198.174.192 and/or IPv6 address such as 2620:0:862:ed1a::1.</p>
+<p>DNS is also used, among many other things, to store information about which mail servers a specific domain name belongs to, if any.</p>
+<p>If you're running a UNIX-like operating system, you can start up a terminal and try to perform a manual domain name lookup with <code>host</code>:</p>
+<pre><code class="command">$ host wikipedia.org</code>
+<code>wikipedia.org has address 91.198.174.192
+wikipedia.org has IPv6 address 2620:0:862:ed1a::1
+wikipedia.org mail is handled by 10 mx1001.wikimedia.org.
+wikipedia.org mail is handled by 50 mx2001.wikimedia.org.
+</code></pre>
+<p class="info info-blue" style="font-size:initial;"><b>NOTE:</b><br>If you don't have <a href="https://man.openbsd.org/host">host</a> installed, depending on what platform you're on, you might need to install <a href="https://www.isc.org/bind/">bind</a> or <code>dnsutils</code>. You can also use something like <a href="https://man.openbsd.org/dig">dig</a>, also from <a href="https://www.isc.org/bind/">bind</a>, or <a href="https://linux.die.net/man/1/drill">drill</a> from <a href="https://nlnetlabs.nl/projects/ldns/about/">ldns</a></p>
+<p>The following list describes some of the terms associated with DNS:</p>
+<ul>
+    <li><code>Forward DNS</code>
+        <ul>
+            <li><p>Mapping of hostnames and domain names to IP addresses.</p></li>
+        </ul>
+    </li>
+    <li><code>Reverse DNS</code>
+        <ul>
+            <li><p>Mapping of IP addresses to hostnames and domain names.</p></li>
+        </ul>
+    </li>
+    <li><code>Resolver</code>
+        <ul>
+            <li><p>A system through which a machine queries a name server for zone information, i.e. another name for a "DNS server".</p></li>
+        </ul>
+    </li>
+    <li><code>Root zone</code>
+        <ul>
+            <li><p>The beginning of the Internet zone hierarchy. All zones fall under the <a href="https://en.wikipedia.org/wiki/DNS_root_zone">root zone</a>, similar to how all files in a file system fall under the root directory.</p></li>
+        </ul>
+    </li>
+</ul>
+<p>This is an example of zones:</p>
+<ul>
+    <li><code>.</code> (a period) is how the root zone is usually referred to in documentation.</li>
+    <li><code>org.</code> is a <a href="https://en.wikipedia.org/wiki/Top-level_domain">Top-Level Domain (TLD)</a> under the root zone.</li>
+    <li><code>wikipedia.org.</code> is a zone under the <code>org.</code> TLD.</li>
+    <li><code>1.168.192.in-addr.arpa</code> is a zone referencing all IP addresses which fall under the <code>192.168.1.*</code> IP address space.</li>
+</ul>
+<p>When a computer on the Internet needs to resolve a domain name the resolver breaks the name up into its labels from right to left. The first component, the Top-Level Domain (TLD), is queried using a root server to obtain the responsible authoritative server. Queries for each label return more specific name servers until a name server returns the answer of the original query.</p>
+<p>Even though any local DNS server can implement its own private root name servers, the term "root name server" is used to describe <a href="https://en.wikipedia.org/wiki/Root_name_server#Root_server_addresses">the thirteen well-known root name servers</a> that implement the root name space domain for the Internet's official global implementation of the Domain Name System. Resolvers use a small 3 KB <code>root.hints</code> file, published by <a href="https://en.wikipedia.org/wiki/InterNIC">Internic</a>, to bootstrap this initial list of root server addresses. For many pieces of software, including Unbound, this list is built into the software.</p>
+<p>On the <a href="https://www.iana.org/domains/root/db">The Root Zone Database</a> you can lookup the delegation details of top-level domains, including TLDs such as .com, .org, and country-code TLDs such as .uk and .de.</p>
+<p class="info info-blue" style="font-size:initial;"><b>NOTE:</b><br>Since you can lookup delegation details of top-level domains, you might expect that it would be possible to go deeper and actually look up every domain that a particular domain server has registered in its database. Since we, for example, can get a list of the responsible top-level domain servers for the <a href="https://www.iana.org/domains/root/db/dk.html">.dk</a> TLD, we might expect that it is possible to query one of those listed name servers for its entire database of authoritative servers, and then query one of those for all registered domains in its database. But that's not how DNS works. There are only two ways that a DNS servers complete database map can be obtained. Either you have to have access to the relevant zone files, or you need to physically construct a database by examining DNS traffic through a recursive DNS server and then reconstruct zone data based upon the data that is collected, until you get everything, which is highly unlikely that you ever will.</p>
+<p>There are two DNS server configuration types:</p>
+<ul>
+    <li><code>Authoritative</code>
+        <ul>
+            <li><p><a href="https://en.wikipedia.org/wiki/Authoritative_name_server">Authoritative name servers</a> publish IP addresses for domains under their authoritative control. These servers are listed as being at the top of the authority chain for their respective domains, and are capable of providing a definitive answer.</p>
+                <p>Authoritative name servers can be primary name servers, also known as master servers, i.e. they contain the original set of data, or they can be secondary or slave name servers, containing data copies usually obtained from synchronization directly with the primary server.</p>
+                <p>An authoritative name server is a name server that only gives answers to DNS queries from data that has been configured by an original source, for example, the domain administrator.</p>
+                <p>Every DNS zone must be assigned a set of authoritative name servers. This set of servers is stored in the parent domain zone with name server (NS) records. An authoritative server indicates its status of supplying definitive answers, deemed authoritative, by setting a protocol flag, called the "Authoritative Answer" (AA) bit in its responses.</p>
+                <p>You can use a network tool such as <a href="https://man.openbsd.org/dig">dig</a> or <a href="https://linux.die.net/man/1/drill">drill</a> to lookup a domain name, the tool will reply with an authoritative flag that reveals whether the DNS server you have queried is the authoritative one.</p>
+            </li>
+        </ul>
+    </li>
+    <li><code>Recursive</code>
+        <ul>
+            <li><p><a href="https://en.wikipedia.org/wiki/Domain_Name_System#Recursive_and_caching_name_server">Recursive servers</a>, sometimes called "DNS caches" or "caching-only name servers", provide DNS name resolution for applications, by relaying the requests of the client application to the chain of authoritative name servers to fully resolve a network name. They also (typically) cache the result to answer potential future queries within a certain expiration time period.</p>
+                <p>Most Internet users access a public recursive DNS server provided by their ISP or a public DNS service provider.</p>
+                <p>In theory, authoritative name servers are sufficient for the operation of the Internet. However, with only authoritative name servers operating, every DNS query must start with recursive queries at the root zone of the Domain Name System and each user system would have to implement resolver software capable of recursive operation. To improve efficiency, reduce DNS traffic across the Internet, and increase performance in end-user applications, the Domain Name System supports recursive resolvers.</p>
+                <p>A recursive DNS query is one for which the DNS server answers the query completely by querying other name servers as needed.</p>
+            </li>
+        </ul>
+    </li>
+</ul>
+<p>A nameserver can be both authoritative and recursive at the same time, but it is recommended not to combine the configuration types. To be able to perform their work, authoritative servers should be available to all clients all the time. On the other hand, since the recursive lookup takes far more time than authoritative responses, recursive servers should be available to a restricted number of clients only, otherwise they are prone to <a href="https://en.wikipedia.org/wiki/Denial-of-service_attack">distributed denial of service (DDoS) attacks</a>.</p>
+<p class="info info-blue" style="font-size:initial;"><b>NOTE:</b><br>If needed, I recommend that you read "How DNS Works" in <a href="https://tldp.org/LDP/nag2/x-087-2-resolv.howdnsworks.html">chapter 6 of the Linux Network Administrators Guide</a>. I also recommend that you read <a href="https://en.wikipedia.org/wiki/Domain_Name_System#Operation">Domain Name Service (DNS)</a> on Wikipedia.</p>
+
+<h2 id="unbound">I present to you, Unbound</h2>
+<p><a href="https://nlnetlabs.nl/projects/unbound/about/">Unbound</a> is a recursive, caching and validating Open Source DNS resolver with the following features:</p>
+<ul>
+    <li>Cache with optional prefetching of popular items before they expire.</li>
+    <li>DNS over TLS (DoT) forwarding and server, with domain-validation.</li>
+    <li>DNS over HTTPS (DoH).</li>
+    <li>Query Name Minimization.</li>
+    <li>Aggressive Use of DNSSEC-Validated Cache.</li>
+    <li>Authority zones, for a local copy of the root zone.</li>
+    <li>DNS64.</li>
+    <li>DNSCrypt.</li>
+    <li>DNSSEC validating.</li>
+    <li>EDNS Client Subnet.</li>
+</ul>
+<p>Unbound is designed to be fast and secure and it incorporates modern features based on open standards. Late 2019, Unbound was <a href="https://ostif.org/wp-content/uploads/2019/12/X41-Unbound-Security-Audit-2019-Final-Report.pdf">rigorously audited</a>.</p>
+<p class="info info-green" style="font-size:initial;"><b>TIP:</b><br>One of the main reasons to use Ubound over several other simple caching-only resolvers, such as <a href="https://en.wikipedia.org/wiki/Dnsmasq">dnsmasq</a> for example, is that if you do not use the <code>forward</code> option in Unbounds configuration, Unbound <b>will query the root servers directly</b> using their registered IP addresses listed in the <a href="https://www.iana.org/domains/root/files">Root Hints File</a>. This will free you of your ISP DNS servers and any public DNS servers, such as Google or Cloudflare, and whatever data recording, selling and manipulation they're doing is avoided. A simple caching server such as dnsmasq will always forward queries to another server, whereas Unbound queries the root servers directly and works its way down the domain chain until it gets the relevant record from the registered authoritative DNS server for the relevant domain. This means that the DNS server that specifically knows what you're looking for is also the one that is authoritative to answer the question.</p>
+<p class="info info-red" style="font-size:initial;"><b>WARNING:</b><br>If you ISP is hijacking DNS traffic, Unbound will not help you in any way. See <a href="#dns-hijacking">DNS hijacking</a> for information on how you can determine if you DNS traffic is getting hijacked.</p>
+<p>In our setup with Unbound, a query for a domain such as "wikipedia.org" will look like this:</p>
+<ol>
+    <li>Your browser sends a query to the operating system with the question, "What is the IP address of wikipedia.org"?</li>
+    <li>The operating system, more specifically the resolver routines in the C library, which provide access to the Internet Domain Name System, will then forward the DNS request to the domain name server(s) listed in <a href="https://man.openbsd.org/resolv.conf">/etc/resolv.conf</a> (on UNIX-like operating systems).</li>
+    <li>Unbound receives the query and first looks for "wikipedia.org" in its cache and if not found, Unbound queries one of the root servers listed in its Root Hints File for the top-level domain ".org".</li>
+    <li>The root server replies with a referral to the relevant servers for the ".org" top-level domain.</li>
+    <li>Unbound then sends a query to one of the relevant servers asking for the authoritative DNS servers for "wikipedia.org".</li>
+    <li>The server replies with a referral to the authoritative name servers registered for "wikipedia.org".</li>
+    <li>Unbound then sends a query to one of those authoritative name servers and asks for the IP address for "wikipedia.org".</li>
+    <li>The authoritative name server replies by sending the IP address it has listed in its "A" and/or "AAAA" record for the domain "wikipedia.org".</li>
+    <li>Unbound receives the IP address from the authoritative name server and returns the answer to the client.</li>
+    <li>If enabled, Unbound then caches the information for a pre-determined length of time for future queries for the same domain.</li>
+</ol>
+<p>You can try to do a DNS <code>trace</code> yourself to see the above. I'm using <a href="https://linux.die.net/man/1/drill">drill</a> in this example with the <code>trace</code> option enabled.</p>
+<pre><code class="command"># drill -T wikipedia.org</code>
+<code>.       518400  IN      NS      l.root-servers.net.
+.       518400  IN      NS      k.root-servers.net.
+.       518400  IN      NS      e.root-servers.net.
+.       518400  IN      NS      a.root-servers.net.
+.       518400  IN      NS      m.root-servers.net.
+.       518400  IN      NS      h.root-servers.net.
+.       518400  IN      NS      i.root-servers.net.
+.       518400  IN      NS      f.root-servers.net.
+.       518400  IN      NS      c.root-servers.net.
+.       518400  IN      NS      b.root-servers.net.
+.       518400  IN      NS      g.root-servers.net.
+.       518400  IN      NS      d.root-servers.net.
+.       518400  IN      NS      j.root-servers.net.
+org.    172800  IN      NS      a0.org.afilias-nst.info.
+org.    172800  IN      NS      a2.org.afilias-nst.info.
+org.    172800  IN      NS      b0.org.afilias-nst.org.
+org.    172800  IN      NS      b2.org.afilias-nst.org.
+org.    172800  IN      NS      c0.org.afilias-nst.info.
+org.    172800  IN      NS      d0.org.afilias-nst.org.
+wikipedia.org.  86400   IN      NS      ns0.wikimedia.org.
+wikipedia.org.  86400   IN      NS      ns1.wikimedia.org.
+wikipedia.org.  86400   IN      NS      ns2.wikimedia.org.
+wikipedia.org.  600     IN      A       91.198.174.192
+</code></pre>
+<p class="info info-blue" style="font-size:initial;"><b>NOTE:</b><br>Unbound has the ability to validate the responses it receives as correct. This is usually accomplished using <a href="https://en.wikipedia.org/wiki/Domain_Name_System_Security_Extensions">Domain Name System Security Extensions (DNSSEC)</a> or by using 0x20-encoded random bits in the query to foil spoof attempts. With the exception of <a href="https://man.openbsd.org/unbound.conf#use~3">0x20-encoded random bits</a>, all the other validation settings such as <a href="https://man.openbsd.org/unbound.conf#harden~3">harden-glue</a> and <a href="https://man.openbsd.org/unbound.conf#harden~4">hardened dnssec-stripped data</a> are all enabled by default in Unbound on OpenBSD.</p>
+
+<h2 id="blocking-with-dns">Blocking with DNS</h2>
+<p>DNS blocking, also called filtering, or DNS spoofing, is the process in which you supply the client that does the query with a "fake" reply. We block a request for a valid IP address either by replying with a <a href="https://tools.ietf.org/html/rfc8020">NXDOMAIN</a>, meaning non-existent domain, or with a redirect to another IP address than the intended by the owner of the domain.</p>
+<p>This enables us to create a list, or multiple lists, of domains we want to block and rather than providing the user with the correct IP address for a certain domain, we return the message that the domain is "non-existent", which will block the application for further communication to the intended destination.</p>
+<p>Normally all DNS requests are send to port 53 using either the UDP or TCP protocol, and by setting up a DNS server, which is what we do with Unbound, and by making sure that all traffic to port 53 reaches our DNS server or otherwise gets blocked, we can make sure that all DNS replies originates from our internal Unbound server that is running on our OpenBSD router.</p>
+<p class="info info-blue" style="font-size:initial;"><b>NOTE:</b><br>You cannot fully trust DNS blocking because DNS blocking can be circumvented. Even though we have a solid approach in place it is always possible for someone to use a <a href="https://en.wikipedia.org/wiki/Virtual_private_network">VPN service</a> to circumvent this setup. We're not trying to build a 100% foolproof system - even though we will be looking a bit further into that a little later in the guide - we're just trying to protect our families in better ways. There are also always other access points to the Internet we need to consider, such as phones, friends phones and houses, public Internet access, etc.</p>
+
+<h3 id="nxdomain">NXDOMAIN vs redirecting</h3>
+<p>When we want to block a domain using DNS we can choose between several methods, but the two most popular is to either redirect the DNS query to a local IP address, such as 127.0.0.1 or 0.0.0.0, or to reply with a Non-existent Internet Domain Names Definition (NXDOMAIN). The NXDOMAIN is a standard reply for a "non-existent Internet or Intranet domain name". If the domain name is unable to be resolved using DNS, a condition called NXDOMAIN occurred.</p>
+<p>We can try to resolve a non-existing domain with the <code>host</code> command:</p>
+<pre><code class="command">$ host a1b7c3n9m3b0.com</code>
+<code>Host a1b7c3n9m3b0.com not found: 3(NXDOMAIN)</code>
+</pre>
+<p>Since the domain name "a1b7c3n9m3b0.com" isn't registered by anyone (at least not while I write this), we get a "NXDOMAIN" response.</p>
+<p>We can also use <code>drill</code>. The relevant information from the output of <code>drill</code> is the <code>rcode</code> field in the "HEADER" section:</p>
+<pre><code class="command">$ drill a1b7c3n9m3b0.com
+;; -&gt;&gt;HEADER&lt;&lt;- opcode: QUERY, <b>rcode: NXDOMAIN</b>, id: 39710
+...
+</code></pre>
+<p>Or if you prefer <code>dig</code>, then the relevant information is located in the <code>status</code> field in the "HEADER" section:</p>
+<pre><code class="command">$ dig a1b7c3n9m3b0.com
+
+; &lt;&lt;&gt;&gt; DiG 9.16.8 &lt;&lt;&gt;&gt; +search a1b7c3n9m3b0.com
+;; global options: +cmd
+;; Got answer:
+;; -&gt;&gt;HEADER&lt;&lt;- opcode: QUERY, <b>status: NXDOMAIN</b>, id: 48858
+...
+</code></pre>
+<p>Using the NXDOMAIN reply is not only the correct way to block a domain, according to <a href="https://tools.ietf.org/html/rfc8020">RFC 8020</a>, but it is also the best way since a redirect to an IP address like 127.0.0.1 or 0.0.0.0 will simply make the client that initiated the DNS query talk to itself.</p>
+<p>It may be that the browser will reply with something like: <code>Firefox can't establish a connection to the server at 0.0.0.0.</code>. However, because the IP address 0.0.0.0 simply translates to our local machine, we're still able to ping that address as it is synonymous to pinging 127.0.0.1:</p>
+<pre><code class="command">$ ping 0.0.0.0</code>
+<code>PING 0.0.0.0 (127.0.0.1) 56(84) bytes of data.
+64 bytes from 127.0.0.1: icmp_seq=1 ttl=64 time=0.019 ms
+64 bytes from 127.0.0.1: icmp_seq=2 ttl=64 time=0.049 ms
+</code></pre>
+<p>As such I recommend that you use the NXDOMAIN reply, which is what we're going to use in this tutorial.</p>
+<p class="info info-green" style="font-size:initial;"><b>TIP:</b><br>Unbound can handle huge lists of blocked domains with a NXDOMAIN reply, but it cannot handle large lists of domains that needs to be redirected very well. If for some reason you should insist on redirecting instead of using NXDOMAIN, I recommend you setup <a href="http://www.thekelleys.org.uk/dnsmasq/doc.html">dnsmasq</a> with the <code>--addn-hosts=&lt;file&gt;</code> option, then make dnsmasq listen on port 53 and have dnsmasq redirect all blocked domains, while it then forwards normal DNS queries to Unbound, setup to listen on a non-standard port, such as port 5353. Contrary to Unbound, dnsmasq can handle huge lists of redirects very well, but it cannot handle large lists of NXDOMAIN domains very well, it becomes extremely slow.</p>
+
+<h2 id="doh">The problem with DNS over HTTPS (DoH)</h2>
+<p>With the introduction of <a href="https://en.wikipedia.org/wiki/DNS_over_HTTPS">DNS over HTTPS</a> (DoH), DNS blocking has become much more difficult. And while I certainly respect the original idea behind the promotion of DoH from a privacy point of view, DoH is a bad construction from a security point of view, and it is the <b>WRONG</b> approach.</p>
+<p>With the already growing number of public DNS servers capable of serving DNS over HTTPS, any application can now utilize DoH and completely circumvent private and enterprise level DNS blocking. Not only that, but DoH has opened the door wide up for application developers to setup their own DoH servers and have their applications use those instead of the regular DNS server attached to the internal network. This is especially problematic regarding <a href="https://en.wikipedia.org/wiki/Proprietary_software">proprietary sofware</a> in which you not only cannot see the source code, but you can also not change any DoH settings.</p>
+<p>Because of DoH we cannot simply block domains, like ad and porn, we must also begin blocking public DoH servers via the firewall too. However, while keeping a list of a growing number of IP addresses of public DoH servers is problematic enough, keeping a list of unknown public DoH servers, which might get utilized by proprietary software, like firmware in <a href="https://en.wikipedia.org/wiki/Internet_of_Things">IoT</a> devices, is impossible.</p>
+<p>DoH has also been a complete nightmare for enterprises because it basically makes it possible to overwrite centrally-imposed DNS settings. This makes it impossible to provide filtering solutions, such as the one we're making, with ad and porn blocking, and it also makes it impossible for system administrators to monitor DNS settings across operating systems to prevent <a href="https://en.wikipedia.org/wiki/DNS_hijacking">DNS hijacking</a> attacks. Having multiple applications with their own unique DoH settings is a nightmare.</p>
+<p>DoH also completely messes up network analysis and monitoring of DNS traffic for security purposes. In 2019, Godlua, a Linux DDoS bot, was the first <a href="https://en.wikipedia.org/wiki/Malware">malware</a> application seen <a href="https://www.zdnet.com/article/first-ever-malware-strain-spotted-abusing-new-doh-dns-over-https-protocol/">using DoH to hide its DNS traffic</a>.</p>
+<p>Furthermore, and perhaps most important, DoH does <b>NOT</b> fully prevent the tracking of users. Some parts of the HTTPS connection are not encrypted, such as <a href="https://en.wikipedia.org/wiki/Server_Name_Indication#Security_implications">SNI fields</a> (it's slowly getting there though), <a href="https://en.wikipedia.org/wiki/Online_Certificate_Status_Protocol">OCSP connections</a>, and of course <b>the destination IP addresses</b>, which in my humble opinion is the most crucial part of the communication that needs to be hidden!</p>
+<p>People who truly need privacy, like journalists in countries with a privacy compromising policy, cannot trust DoH! The IP address of the destination server cannot be hidden with DoH, even if everything about the traffic itself is encrypted. If someone truly needs to encrypt communication the person needs a completely different strategy than DoH.</p>
+<p>This makes me wonder who in the world thought that DoH was a good idea to begin with!? Did they not understand the basics behind communication with HTTPS, or has this agenda perhaps been pushed forward by a few private DNS service companies, such as Cloudflare, who gain profit by further collecting user data?</p>
+<p>Some public DNS service providers state that from a privacy perspective DoH is better than the alternatives, such as <a href="https://en.wikipedia.org/wiki/DNS_over_TLS">DNS over TLS (DoT)</a>, as DNS queries are hidden within the larger flow of HTTPS traffic. This gives network administrators less visibility but provides users with more privacy.</p>
+<p>That message is problematic. While it is true that the initial domain name lookup is hidden in the HTTPS traffic, the destination IP address provided by the DoH server isn't. When the client application visits the destination IP address, both the source IP address and the destination IP addresses are logged at the ISP level (and possibly multiple other levels as well).</p>
+<p>While it isn't immediately possible to determine exactly what domain name the user is trying to reach on the destination web server, especially if the web server is running multiple domains under the same IP address, it is definitely neither impossible nor even difficult.</p>
+<p class="info info-blue" style="font-size:initial;"><b>NOTE:</b><br>In the appendix you can find a section called <a href="#inspecting-doh">Inspecting DNS over HTTPS (DoH)</a>, in which we will look at a demonstration on how the destination IP address is revealed in the DoH communication.</p>
+
+<h2 id="unbound-setup">Setting up Unbound</h2>
+
+<h3 id="basic-settings">Basic settings</h3>
+<p>Setting up Unbound is very easy as Unbound not only comes with great defaults, but it is also very well documented. Before we begin I advice that you take a look at the OpenBSD man page for <a href="https://man.openbsd.org/unbound">unbound</a>, <a href="https://man.openbsd.org/unbound-checkconf">unbound-checkconf</a> and <a href="https://man.openbsd.org/unbound.conf">unbound.conf</a>.</p>
+<p>Because Unbound is <a href="https://en.wikipedia.org/wiki/chroot">chrooted</a> on OpenBSD, the configuration file <code>unbound.conf</code> doesn't reside in <code>/etc</code>, as it otherwise normally would, instead it resides in <code>/var/unbound/etc/</code>.</p>
+<p>Copy the existing Unbound configuration file:</p>
+<pre><code class="command"># mv /var/unbound/etc/unbound.conf /var/unbound/etc/unbound.conf.backup</code></pre>
+<p>Then use your favorite text editor and create a new <code>/var/unbound/etc/unbound.conf</code> file and populate it with the following contents:</p>
+<pre><code>server:
+
+    # Logging (default is no).
+    # Uncomment this section if you want to enable logging.
+    # Note enabling logging makes the server (significantly) slower.
+    # verbosity: 2
+    # log-queries: yes
+    # log-replies: yes
+    # log-tag-queryreply: yes
+    # log-local-actions: yes
+
+    interface: 127.0.0.1
+    interface: 192.168.1.1
+    interface: 192.168.2.1
+    interface: 192.168.3.1
+
+    # In case you need Unbound to listen on an alternative port, this is the
+    # syntax:
+    # interface: 127.0.0.1@5353
+
+    # Disable IPv6.
+    do-ip6: no
+
+    # Control who has access.
+    access-control: 0.0.0.0/0 refuse
+    access-control: 127.0.0.0/8 allow
+    access-control: ::0/0 refuse
+    access-control: ::1 allow
+    access-control: 192.168.1.0/24 allow
+    access-control: 192.168.2.0/24 allow
+    access-control: 192.168.3.0/24 allow
+
+    # "id.server" and "hostname.bind" queries are refused.
+    hide-identity: yes
+
+    # "version.server" and "version.bind" queries are refused.
+    hide-version: yes
+
+    # Cache elements are prefetched before they expire to keep the cache up to date.
+    prefetch: yes
+
+    # Our LAN segments.
+    private-address: 192.168.0.0/16
+
+    # We want DNSSEC validation.
+    auto-trust-anchor-file: "/var/unbound/db/root.key"
+
+# Enable the usage of the unbound-control command.
+remote-control:
+    control-enable: yes
+    control-interface: /var/run/unbound.sock
+</code></pre>
+<p>I have commented the options above, but if you need further explanation for the configuration take a look at each setting in the man page for <a href="https://man.openbsd.org/unbound.conf">unbound.conf</a>.</p>
+<p>Logging is done to syslog by default. If you want to change that you can create a log file in Unbounds chroot and then have Unbound log to that:</p>
+<pre><code class="command"># mkdir /var/unbound/log
+# touch /var/unbound/log/unbound.log
+# chown -R root._unbound /var/unbound/log
+# chmod -R 774 /var/unbound/log
+</code></pre>
+<p>Then in the <code>unbound.conf</code> file, add the following options to the logging section:</p>
+<pre><code>logfile: "/log/unbound.log"
+use-syslog: no
+log-time-ascii: yes
+</code></pre>
+<p class="info info-blue" style="font-size:initial;"><b>NOTE:</b><br>We do not use the full path to the log file because Unbound is chrooted. With the <code>logfile</code> option above the log file ends up in <code>/var/unbound/log/unbound.conf.</code></p>
+<p>Then restart Unbound:</p>
+<pre><code class="command"># rcctl restart unbound
+</code></pre>
+<p>In the settings above I have allowed Unbound to listen on the loopback interface (127.0.0.1) in order for local network applications to be able to do lookups if needed. In <code>/etc/resolv.conf</code> on our OpenBSD router I have listed our Unbound DNS server as I don't want anything on the router to query ISP DNS servers:</p>
+<pre><code>nameserver 127.0.0.1</code></pre>
+<p>If you are using DHCP on the external interface (the interface connected to your ISP modem or router) you need to make sure that <a href="https://man.openbsd.org/dhclient">dhclient</a> doesn't change <code>/etc/resolv.conf</code>. Edit <code>/etc/dhclient.conf</code> and add:</p>
+<pre><code>supersede domain-name-servers 127.0.0.1;</code></pre>
+<p>This will make sure that we only have our local DNS server listed.</p>
+<p>Enable Unbound with:</p>
+<pre><code class="command"># rcctl enable unbound</code></pre>
+<p>Whenever you change the Unbound configurations you can either just restart Unbound with:</p>
+<pre><code class="command"># rcctl restart unbound</code></pre>
+<p>Or simply reload the configuration options afresh (this also flushes the cache):</p>
+<pre><code class="command"># unbound-control reload</code></pre>
+<p>You can list the settings Unbound is started with by running the following command (this goes for any service running on OpenBSD):</p>
+<pre><code class="command"># rcctl get unbound</code></pre>
+<p>If you want to get some statistical data, you can run:</p>
+<pre><code class="command"># # unbound-control stats_noreset</code>
+<code>thread0.num.queries=2056
+thread0.num.queries_ip_ratelimited=0
+thread0.num.cachehits=678
+thread0.num.cachemiss=1378
+thread0.num.prefetch=15
+thread0.num.expired=0
+...
+</code></pre>
+<p>You can also get a dump of the cache:</p>
+<pre><code class="command"># unbound-control dump_cache|less</code></pre>
+<p>If you want to see what name servers Unbound queries for a specific domain, you can do that with:</p>
+<pre><code class="command"># unbound-control lookup wikipedia.org</code></pre>
+<p>Take a look at the man page for <a href="https://man.openbsd.org/unbound-control">unbound-control</a> for further options and commands.</p>
+
+<h3 id="lets-block-some-domains">Let's block some domains!</h3>
+<p>Now we get to the interesting part about domain blocking.</p>
+<p>I have created a simple shell script called <a href="https://codeberg.org/unixsheikh/dnsblockbuster">DNSBlockBuster</a> that automatically downloads a set of hosts files from various online sources, concatenates them into one, does some cleanup, and then convert the result into a domain block list for both Unbound and dnsmasq.</p>
+<p>With DNSBlockBuster you have the option to create a whitelist, should any of the domains listed in the hosts files be a false positive for you, and you can add your own blacklist in case you want to manually block some domains that aren't listed in the hosts files. You can also easily add new block lists or remove any of the provided block lists.</p>
+<p>You don't need to use my script of course, but I will use the script in this tutorial.</p>
+<p>Currently the script creates a huge domain list with almost two million domains listed and Unbound takes up about 705MB of memory in total when the entire block list is loaded.</p>
+<p>In order to prevent Unbound from timing out during the loading of the list, edit <code>/etc/rc.conf.local</code> and add the following:</p>
+<pre><code>unbound_timeout=240</code></pre>
+<p>Then restart Unbound:</p>
+<pre><code class="command"># rcctl restart unbound</code></pre>
+<p>Take a look at the <a href="https://codeberg.org/unixsheikh/dnsblockbuster#user-content-usage">Usage</a> section in the documentation for DNSBlockBuster on how to use it. It's easy and simple.</p>
+<p>Once you have created your block list for Unbound place it in <code>/var/unbound/etc/</code>, then edit the Unbound configuration file <code>/var/unbound/etc/unbound.conf</code> and insert the following somewhere:</p>
+<pre><code>include: "/var/unbound/etc/unbound-blocked-hosts.conf"</code></pre>
+<p>Now reload Unbound with:</p>
+<pre><code class="command"># unbound-control reload</code></pre>
+<p>If you run the <code>top</code> command in another terminal you will notice that Unbound takes up quite a bit of CPU while it is initially loading the list. Also notice the memory usage.</p>
+<p>You can now test our DNS blocking by querying one of the blocked domains from the list:</p>
+<pre><code class="command">$ drill 3lift.com</code>
+<code>;; -&gt;&gt;HEADER&lt;&lt;- opcode: QUERY, <b>rcode: NXDOMAIN</b>, id: 55906
+...
+</code></pre>
+<p>Then try the same with Cloudflares DNS server:</p>
+<pre><code class="command">$ drill 3lift.com @1.1.1.1</code>
+<code>;; -&gt;&gt;HEADER&lt;&lt;- opcode: QUERY, <b>rcode: NOERROR</b>, id: 48771
+...
+</code></pre>
+<p>As we can see from the queries, our DNS server blocks access to the domain 3lift.com by replying with a NXDOMAIN, while Cloudflares DNS server replies with the correct IP address.</p>
+
+<h2 id="dns-security">DNS security</h2>
+<p>DNS security is a broad subject. In this section we'll deal with a few of the topics that mostly concern us with regard to running our own DNS server.</p>
+<p>The DNS protocol is unencrypted and does not, by default, account for any confidentiality, integrity or authentication. If you use an untrusted network or a malicious ISP, your DNS queries can be eavesdropped and the responses manipulated. Furthermore, ISPs can conduct DNS hijacking.</p>
+
+<h3 id="dns-hijacking">DNS hijacking</h3>
+<p>DNS hijacking means that the DNS queries you perform gets redirecting to another DNS server. This is typically done by redirecting all traffic on port 53 from one destination to another.</p>
+<p>One of the simplest ways to determine whether your ISP is hijacking your DNS traffic is to query an authoritative DNS server directly.</p>
+<p>We can use multiple tools for this. In this example we'll first use <code>drill</code>. The options, in this example, are the same for <code>dig</code>. We'll use the domain "wikipedia.org" again.</p>
+<p>First we need to get the authoritative servers. They will appear in the "ANSWER SECTION":</p>
+<pre><code class="command">$ drill NS wikipedia.org</code>
+<code>;; -&gt;&gt;HEADER&lt;&lt;- opcode: QUERY, rcode: NOERROR, id: 28789
+;; flags: qr rd ra ; QUERY: 1, ANSWER: 3, AUTHORITY: 0, ADDITIONAL: 0
+;; QUESTION SECTION:
+;; wikipedia.org.       IN      NS
+
+;; ANSWER SECTION:
+<b>wikipedia.org.  85948   IN      NS      ns2.wikimedia.org.
+wikipedia.org.  85948   IN      NS      ns0.wikimedia.org.
+wikipedia.org.  85948   IN      NS      ns1.wikimedia.org.</b>
+
+;; AUTHORITY SECTION:
+
+;; ADDITIONAL SECTION:
+
+;; Query time: 1 msec
+;; SERVER: 127.0.0.1
+;; WHEN: Thu Nov  5 07:53:19 2020
+;; MSG SIZE  rcvd: 95
+</code>
+</pre>
+<p>Then we need to query one of those authoritative servers directly. The important field to pay attention to is the flags in the "HEADER" field. In order for the answer to be authoritative the flag <code>aa</code> must be listed.</p>
+<pre><code class="command">$ drill @ns1.wikimedia.org wikipedia.org</code>
+<code>;; -&gt;&gt;HEADER&lt;&lt;- opcode: QUERY, rcode: NOERROR, id: 57611
+;; flags: qr <b>aa</b> rd ; QUERY: 1, ANSWER: 1, AUTHORITY: 0, ADDITIONAL: 0
+;; QUESTION SECTION:
+;; wikipedia.org.       IN      A
+
+;; ANSWER SECTION:
+wikipedia.org.  600     IN      A       91.198.174.192
+
+;; AUTHORITY SECTION:
+
+;; ADDITIONAL SECTION:
+
+;; Query time: 127 msec
+;; SERVER: 208.80.153.231
+;; WHEN: Thu Nov  5 07:56:10 2020
+;; MSG SIZE  rcvd: 47
+</code>
+</pre>
+<p>This shows that the reply we got was not hijacked as the reply was authoritative. Let's try to give the Cloudflare public DNS server the same query:</p>
+<pre><code class="command">$ drill @1.1.1.1 wikipedia.org</code>
+<code>;; -&gt;&gt;HEADER&lt;&lt;- opcode: QUERY, rcode: NOERROR, id: 40562
+;; flags: qr rd ra ; QUERY: 1, ANSWER: 1, AUTHORITY: 0, ADDITIONAL: 0
+;; QUESTION SECTION:
+;; wikipedia.org.       IN      A
+
+;; ANSWER SECTION:
+wikipedia.org.  555     IN      A       91.198.174.192
+
+;; AUTHORITY SECTION:
+
+;; ADDITIONAL SECTION:
+
+;; Query time: 3 msec
+;; SERVER: 1.1.1.1
+;; WHEN: Thu Nov  5 08:02:58 2020
+;; MSG SIZE  rcvd: 47
+</code></pre>
+<p>Notice how the <code>aa</code> flag is missing from the "HEADER" field. This means that the reply was not authoritative.</p>
+<p>Another more simple tool is <a href="https://man.openbsd.org/nslookup">nslookup</a>. Let's first query for the authoritative name servers:</p>
+<pre><code class="command">nslookup -querytype=NS wikipedia.org</code>
+<code>Server:         127.0.0.1
+Address:        127.0.0.1#53
+
+Non-authoritative answer:
+wikipedia.org   nameserver = ns1.wikimedia.org.
+wikipedia.org   nameserver = ns2.wikimedia.org.
+wikipedia.org   nameserver = ns0.wikimedia.org.
+</code></pre>
+<p>Then let's try to query our own DNS server for the domain:</p>
+<pre><code class="command">$ nslookup wikipedia.org</code>
+<code>Server:         127.0.0.1
+Address:        127.0.0.1#53
+
+<b>Non-authoritative answer:</b>
+Name:   wikipedia.org
+Address: 91.198.174.192
+
+Server:         ns2.wikimedia.org
+Address:        91.198.174.239#53
+
+Name:   wikipedia.org
+Address: 91.198.174.192
+</code></pre>
+<p>The message <code>Non-authoritative</code> clearly demonstrates that the reply isn't from an authoritative DNS server. That's fine, we did query our own DNS server. Let's try to query one of the authoritative servers directly:</p>
+<pre><code class="command">$ nslookup wikipedia.org ns0.wikimedia.org</code>
+<code>Server:         ns0.wikimedia.org
+Address:        208.80.154.238#53
+
+Name:   wikipedia.org
+Address: 91.198.174.192
+</code></pre>
+<p>The message <code>Non-authoritative</code> is gone, the reply we got <b>was authoritative</b>, which means that our DNS query was not hijacked.</p>
+<p>I have now enabled a VPN service that I know intercepts DNS queries in order to protect customers against <a href="https://en.wikipedia.org/wiki/DNS_leak">DNS leakage</a> and I am now going to query one of the authoritative servers again:</p>
+<pre><code class="command">$ nslookup wikipedia.org ns0.wikimedia.org</code>
+<code>Server:         ns0.wikimedia.org
+Address:        208.80.154.238#53
+
+<b>Non-authoritative answer:</b>
+Name:   wikipedia.org
+Address: 91.198.174.192
+Name:   wikipedia.org
+Address: 2620:0:862:ed1a::1
+</code></pre>
+<p>As expected the answer was not authoritative even though I queried the authoritative server directly. The DNS traffic <b>was hijacked</b> and the reply was redirected to another unknown DNS server.</p>
+<p>DNS hijacking, whether performed by the ISP or someone else, is highly problematic. First of all, we cannot fully trust the answer we get from the DNS server. Secondly, even if the DNS reply does deliver untampered data, the DNS traffic has been hijacked for some unknown reason, which might be data collection and logging, or completely different.</p>
+<p class="info info-blue" style="font-size:initial;"><b>NOTE:</b><br>Some ISPs such as Optimum Online, Comcast, Time Warner, Cox Communications, RCN, Rogers, Charter Communications, Verizon, Virgin Media, Frontier Communications, Bell Sympatico, Airtel, OpenDNS and others started the practice of DNS hijacking on non-existent domain names (NXDOMAIN) for making money by displaying advertisements. The DNS server redirected a request to a non-existing domain name to a fake IP address that contained a website with ads. I don't know how many ISPs and public DNS service providers that still do that.</p>
+
+<h4 id="dns-hijacking-prevention">DNS hijacking prevention</h4>
+<p>If you have discovered that your DNS traffic on port 53 gets hijacked you basically only got three options in order to protect yourself:</p>
+<ol>
+    <li>If you have the option then change your ISP! Your ISP should not be hijacking your DNS traffic.</li>
+    <li>Setup your own remote DNS server on a hosting center that doesn't hijack or block port 53. Then have your remote DNS server listen for DNS connections on a non-standard port and forward all your DNS queries to your remote DNS server.</li>
+    <li>Use a trusted VPN that doesn't hijack DNS traffic, or if it does, make sure you can trust their non-logging policy.</li>
+</ol>
+
+<h3 id="dns-spoofing">DNS spoofing</h3>
+<p>DNS spoofing, also referred to as DNS cache poisoning, is something different from DNS hijacking. While the traffic gets redirected from one destination to another in a DNS hijacking attack, it is the data itself that gets manipulated in a DNS spoofing attack. Often the two attack strategies are combined.</p>
+<p>In a DNS spoofing attach, manipulated data is introduced into the DNS resolver's cache, causing the name server to return an incorrect result, e.g. a wrong IP address.</p>
+
+<h4 id="dns-spoofing-prevention">DNS spoofing prevention</h4>
+<p>This kind of attack can be mitigated at the transport layer or application layer by performing end-to-end validation once a connection is established. A common example of this is the use of Transport Layer Security (TLS) and digital signatures.</p>
+<p><a href="https://en.wikipedia.org/wiki/DNSSEC">Secure DNS (DNSSEC)</a> uses cryptographic digital signatures signed with a trusted public key certificate to determine the authenticity of data. DNSSEC can protect against DNS spoofing, however many DNS administrators have still not implemented it.</p>
+<p>As of 2020, all of the original TLDs support DNSSEC, as do country code TLDs of most large countries, but many country code TLDs still do not.</p>
+
+<h2 id="appendix">Appendix</h2>
+
+<h3 id="inspecting-doh">Inspecting DNS over HTTPS (DoH)</h3>
+<p>I want to illustrate the fact that DoH doesn't really provide any true privacy as both the source IP address and the destination IP address can be seen clearly in the HTTPS communication.</p>
+<p>First I have made sure that DoH is disabled in Firefox, on one of the computers on the grown-ups LAN, and are monitoring traffic on the <code>em1</code> interface with the usage of <a href="https://man.openbsd.org/tcpdump">tcpdump</a>. I have also enabled the log file on Unbound, just to avoid filling op syslog with too much DNS noise, and I am using <a href="https://man.openbsd.org/tail">tail</a> to monitor the log.</p>
+<p>I'll head over to "wikipedia.org" in the browser and then see what the surveillance on the router reveals.</p>
+<pre><code class="command"># tcpdump -n -i em1 src host 192.168.1.5 and not arp</code>
+<code>tcpdump: listening on em1, link-type EN10MB
+23:30:33.494352 192.168.1.5.55724 &gt; 192.168.1.1.53: 58136+ A? wikipedia.org.(31) (DF)
+23:30:33.774439 192.168.1.5.58372 &gt; 192.168.1.1.53: 58448+ A? www.wikipedia.org.(35) (DF)
+23:30:34.184287 192.168.1.5.46639 &gt; 192.168.1.1.53: 15167+ A? www.wikipedia.org.(35) (DF)
+...
+</code></pre>
+<pre><code class="command"># tail -f /var/unbound/log/unbound.log</code>
+<code>Nov 05 23:30:33 unbound[12636:0] query: 192.168.1.5 wikipedia.org. A IN
+Nov 05 23:30:33 unbound[12636:0] reply: 192.168.1.5 wikipedia.org. A IN NOERROR 0.097209 0 47
+Nov 05 23:30:33 unbound[12636:0] query: 192.168.1.5 www.wikipedia.org. A IN
+Nov 05 23:30:33 unbound[12636:0] reply: 192.168.1.5 www.wikipedia.org. A IN NOERROR 0.154989 0 80
+Nov 05 23:30:34 unbound[12636:0] query: 192.168.1.5 www.wikipedia.org. A IN
+Nov 05 23:30:34 unbound[12636:0] reply: 192.168.1.5 www.wikipedia.org. A IN NOERROR 0.000000 1 80
+...
+</code></pre>
+<p>Naturally we're seeing the query both on the interface traffic as well as in the Unbound log.</p>
+<p>I have then enabled DoH and disabled regular DNS in firefox, by setting the value of <code>network.trr.mode</code> to <code>4</code>. I have then changed the <code>Network settings</code> and set Cloudflare as the DoH provider.</p>
+<p class="info info-green" style="font-size:initial;"><b>TIP:</b><br>
+If you just enable DoH in Firefox via the preferences pane, Firefox will still use regular DNS as a fallback. In order to force Firefox to only use DoH you can set the value of <code>network.trr.mode</code>.
+<br><br>Type <code>about:config</code> in the URL bar and press <code>Enter</code> to access Firefox's hidden configuration panel.
+<br><br>Step 2: Look for the setting <code>network.trr.mode</code>. This controls DoH support. This setting supports four values:
+<br><br><b>1</b> - DoH is disabled.
+<br><b>2</b> - DoH is enabled, but Firefox uses both DoH and regular DNS based on which returns faster query responses
+<br><b>3</b> - DoH is enabled, and regular DNS works as a backup
+<br><b>4</b> - DoH is enabled, and regular DNS is disabled
+<br><b>5</b> - DoH is disabled
+<br><br>Step 3: Look for the setting <code>network.trr.bootstrapAddress</code>. This controls the numerical IP address for your DoH server. Input the value of <code>1.1.1.1</code> into the field and press <code>Enter</code>.</p>
+<p>This time I'll visit "freebsd.org".</p>
+<pre><code class="command"># tcpdump -n -i em1 src 192.168.1.5 and not arp</code>
+<code>tcpdump: listening on em1, link-type EN10MB
+00:21:10.944243 192.168.1.5.32856 &gt; 1.1.1.1.443: P 2223446146:2223446202(56) ack 157857007 win 501 (DF)
+00:21:10.948719 192.168.1.5.46584 &gt; 96.47.72.84.80: S 922508523:922508523(0) win 64240 &lt;mss 1460,sackOK,timestamp 1673624773 0,nop,wscale 7&gt; (DF)
+00:21:11.133801 192.168.1.5.33298 &gt; 96.47.72.84.443: S 3275123911:3275123911(0) win 64240 &lt;mss 1460,sackOK,timestamp 1673624958 0,nop,wscale 7&gt; (DF)
+...
+</code></pre>
+<pre><code class="command"># tail -f /var/unbound/log/unbound.log</code>
+<code>Nov 05 23:30:33 unbound[12636:0] query: 192.168.1.5 wikipedia.org. A IN
+Nov 05 23:30:33 unbound[12636:0] reply: 192.168.1.5 wikipedia.org. A IN NOERROR 0.097209 0 47
+Nov 05 23:30:33 unbound[12636:0] query: 192.168.1.5 www.wikipedia.org. A IN
+Nov 05 23:30:33 unbound[12636:0] reply: 192.168.1.5 www.wikipedia.org. A IN NOERROR 0.154989 0 80
+Nov 05 23:30:34 unbound[12636:0] query: 192.168.1.5 www.wikipedia.org. A IN
+Nov 05 23:30:34 unbound[12636:0] reply: 192.168.1.5 www.wikipedia.org. A IN NOERROR 0.000000 1 80
+...
+</code></pre>
+<p>This reveals, from the monitoring of the network interface, that a connection was made to Cloudflares DNS server on 1.1.1.1 on port 443 (HTTPS) and that we visited the IP destination address 96.47.72.84 right after. At the same time nothing has happened in the Unbound log, <code>tail</code> still just shows the previous query.</p>
+<p>If we do a regular DNS query on the router we can verify that the IP address 96.47.72.84 is indeed the IP address for "freebsd.org".</p>
+<p>Furthermore, in this specific example we can even get straight to the website of "freebsd.org" just by inputting the destination IP address 96.47.72.84 into the browsers address field.</p>
+<p>This demonstrates that even though DoH bypasses the regular DNS query, it is not able to hide the destination IP address that is still present in clear text in the communications traffic.</p>
+
+<h3 id="how-to-contribute">How to contribute to the guide?</h3>
+<p>Please consider contributing if you have any comments, corrections, or changes you consider appropriate.</p>
+<ul>
+    <li>Clone on <a href="https://codeberg.org/unixsheikh/openbsd-router-manual">Codeberg</a></li>
+    <li>Submit a pull request for consideration</li>
+</ul>
+<p>You can also just use <a href="https://www.unixsheikh.com/contact.html">email</a> :)</p>
+
+</article>
+<footer class="info info-grey" style="text-align:center;">
+    <h3>Created and maintained by</h3>
+    <p><a href="https://unixsheikh.com/">Unix Sheikh</a></p>
+    <p>The OpenBSD router guide is released under the <a href="https://opensource.org/licenses/BSD-3-Clause">BSD-3-Clause license</a>.
+<p>If you found this content useful consider supporting me on <a href="https://patreon.com/unixsheikh">Patreon</a> :)</p>
+</footer>
+</body>
+</html>
