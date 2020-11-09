@@ -163,7 +163,7 @@ At present, as far as I know, none of the OpenBSD wireless drivers are fully wit
 <h3 id="setting-up-the-network">Setting up the network</h3>
 <p>The first thing we'll setup is the different NICs on our OpenBSD router. On my particular machine I have disabled the NIC that is build into the motherboard via the BIOS and I am only going to use the four port Intel knockoff NIC.</p>
 <p>If you're following this tutorial and only want a basic firewall then you need at least two separate NICs.</p>
-<p>Before we begin make sure you have read and understood the different options in <a href="https://man.openbsd.org/hostname.if">hostname.if</a> man page.</p>
+<p>Before we begin make sure you have read and understood the different options in <a href="https://man.openbsd.org/hostname.if">hostname.if</a> man page. Also take a look at the networking section in the <a href="https://www.openbsd.org/faq/faq6.html">OpenBSD FAQ</a>.</p>
 <p>Since I am using Intel the <a href="https://man.openbsd.org/em">em</a> driver is the one OpenBSD loads and each port on the NIC is listed as a separate card. This means that each card is listed with <code>emX</code> where X is the actual number of the port on the given card.</p>
 <p>A <code>dmesg</code> lists my NIC with the four ports like this:</p>
 <pre><code class="command"># dmesg</code>
