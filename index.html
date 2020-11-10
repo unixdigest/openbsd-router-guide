@@ -18,7 +18,7 @@
         <td>
             <h1 class="title">OpenBSD Router Guide</h1>
             <h4>Network segmenting firewall, DHCP, DNS with Unbound, domain blocking and much more<br>
-                <span style="font-size:x-small;font-weight:initial;">OpenBSD: 6.8 · Published: 2020-11-05 · Updated: 2020-11-08 · Version: 1.1.2</span>
+                <span style="font-size:x-small;font-weight:initial;">OpenBSD: 6.8 · Published: 2020-11-05 · Updated: 2020-11-10 · Version: 1.1.3</span>
             </h4>
         </td>
     </tr>
@@ -317,6 +317,14 @@ subnet 192.168.3.0 netmask 255.255.255.0 {
             <p>The <code>rdr-to</code> option is usually applied inbound, meaning <b>redirected from the Internet into the inside network</b>.</p></li>
     </ul>
 </li>
+<li>List items and range of addresses and ports
+    <ul style="list-style-type:none;">
+        <li><p>When you need to specify multiple items, e.g. multiple port numbers, you can separate them with a whitespace or a comma. Like this <code>port { 53 853 }</code> or like this <code>port { 53, 853 }</code></p>
+        <p>Ranges of addresses are specified using the <<code>-</code> operator. E.g. <code>192.168.1.2 - 192.168.1.10</code> means all IP addresses from 192.168.1.2 until 192.168.1.10, both included.</p>
+        <p>Range of ports has multiple parameters, look at the man page for <a href="https://man.openbsd.org/pf.conf">pf.conf</a> and search for the text <q>Ports and ranges of ports are specified using these operators</q>.</p>
+        </li>
+    </ul>
+</li>
 </ul>
 <p class="info info-red" style="font-size:initial;"><b>WARNING:</b><br>Please note that each time a packet processed by the packet filter comes in on or goes out through an interface, the filter rules are evaluated in sequential order, from first to last. For <code>block</code> and <code>pass</code>, <b>the last matching rule decides what action is taken</b>. If no rule matches the packet, the default action is to pass the packet without creating a state. For <code>match</code>, rules are evaluated <b>every time they match</b>.</p>
 
@@ -404,13 +412,13 @@ block drop in quick inet from 192.168.3.1 to any<br>
 pass in on $g_lan
 
 # Always block DNS queries not addressed to our DNS server.
-block return in quick on $g_lan proto { udp tcp } to ! $g_lan port 53
+block return in quick on $g_lan proto { udp tcp } to ! $g_lan port { 53 853 }
 
 # Block the network printer from "phoning home".
 block in quick on $g_lan from 192.168.1.8
 </code></pre>
 <p>In this example we have a network printer attached to the grown-ups network that we don't want to access the Internet or anywhere else, just in case it has some kind of spying firmware. We do that by saying, <i>block all data coming in on em1 from the IP address 192.168.1.8 going to any IP address</i>.</p>
-<p>Also we make sure that all DNS requests on port 53 are always blocked if they are not addressed to our DNS server.</p>
+<p>Also we make sure that all DNS requests on port 53 (regular DNS) and 853 (DNS over TLS) are always blocked if they are not addressed to our DNS server.</p>
 <p class="info info-blue" style="font-size:initial;"><b>NOTE:</b><br>Previously I used to redirect all traffic on port 53 not addressed to our DNS server back to our DNS server. I did that because when we block the DNS request on port 53, whether with a <code>return</code> or <code>drop</code>, the request will timeout on the client, which will make most clients cause a delay in the reply. I have since changed it to a block because I believe that it is the more correct approach. All clients need to realize that communication on port 53 is blocked, unless it is addressed to our DNS server. This is also important when we're troubleshooting our network. If we get a redirected reply from our DNS server we might not notice that we have been redirected.</p>
 <p class="info info-blue" style="font-size:initial;"><b>NOTE:</b><br>DNS primarily uses the User Datagram Protocol (UDP) on port number 53 to serve requests, but when the length of the answer exceeds 512 bytes and both client and server support EDNS, larger UDP packets are used. Otherwise, the query is sent again using the Transmission Control Protocol (TCP). Some DNS resolver implementations use TCP for all queries. As such we need both the UDP and TCP protocols in rule for port 53.</p>
 <p>The children's part of the LAN is very similar (a more restricted setup is demonstrated in the <a href="#whitelist">children's whitelist</a> section).</p>
@@ -423,7 +431,7 @@ block in quick on $g_lan from 192.168.1.8
 pass in on $c_lan
 
 # Always block DNS queries not addressed to our DNS server.
-block return in quick on $c_lan proto { udp tcp} to ! $c_lan port 53
+block return in quick on $c_lan proto { udp tcp} to ! $c_lan port { 53 853 }
 </code></pre>
 <p>Then we get to the LAN with a publicly facing web server. Since we have a publicly facing web server we set up a couple of restrictions. Should the web server ever get compromised the intruder will have a hard time figuring out what else is located on our internal network.</p>
 <p>We block all access except for DHCP, in order for the web server to get an IP address from our router, and then <b>only manually</b> open other things up whenever we need to update the machine or do something else. I have commented out the options we need, when we need to open things up, leaving the restricting parts enabled. When you need to update the server you open up for DNS and general access to the Internet.</p>
@@ -441,7 +449,7 @@ pass in on $p_lan inet proto udp from any port 67
 # pass in on $p_lan to { ! 192.168.1.0/24 ! 192.168.2.0/24 }
 
 # Always block DNS queries not addressed to our DNS server.
-block return in quick on $p_lan proto { udp tcp} to ! $p_lan port 53
+block return in quick on $p_lan proto { udp tcp} to ! $p_lan port { 53 853 }
 </code></pre>
 <p>In this setup, the only thing that the web server can do is to get an IP address from the router. It cannot ping or otherwise contact any other machine on our internal network, and it cannot access the Internet unless the comment is removed from the rule <code>pass in on $p_lan to { ! 192.168.1.0/24 ! 192.168.2.0/24 }</code>.</p>
 <p>These restrictions doesn't mean that the web server cannot respond to oncoming requests. The reason for this is that we will add a rule in our redirect section in a moment that allows clients on the Internet to access our publicly faced web server, when this happens the response from the web server will become a part of the state established by the original connection from the client from outside, which the web server will then be permitted to respond to.</p>
@@ -477,7 +485,7 @@ pass in on $ext_if inet proto tcp to $ext_if port { 80 443 } rdr-to 192.168.3.2
 pass in on $c_lan to x.x.x.x
 
 # Always block DNS queries not addressed to our DNS server.
-block return in quick on $c_lan proto { udp tcp} to ! $c_lan port 53
+block return in quick on $c_lan proto { udp tcp} to ! $c_lan port { 53 853 }
 </code></pre>
 <p>If the website has multiple IP addresses you need to figure out what those are. Sometimes a domain name lookup can reveal all the relevant IP addresses at once. At other times you need to repeat the lookup multiple times at different intervals in the day in order to get the full range of IP addresses. You can do that by setting up an automated script.</p>
 <p>Sometimes you may need to contact the relevant company and ask if you can get the IP range for your whitelist (some companies keep the information public, others refuse to release the information out of fear for malicious usage). Once you have determined what the IP range is you can put those into a PF <code>table</code> and then use that.</p>
@@ -504,7 +512,7 @@ table &lt;whitelist&gt; { x.x.x.x y.y.y.y z.z.z.z }
 pass in on $c_lan to &lt;whitelist&gt;
 
 # Always block DNS queries not addressed to our DNS server.
-block return in quick on $c_lan proto { udp tcp} to ! $c_lan port 53
+block return in quick on $c_lan proto { udp tcp} to ! $c_lan port { 53 853 }
 </code></pre>
 <p>It is not always possible to get all the needed IP addresses into a whitelist all at once, but by monitoring the network, using e.g. <a href="https://man.openbsd.org/tcpdump">tcpdump</a>, when the game is trying to access a server, you can put together a working list, bit by bit.</p>
 
