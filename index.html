@@ -1088,8 +1088,8 @@ Nov 05 23:30:34 unbound[12636:0] reply: 192.168.1.5 www.wikipedia.org. A IN NOER
 <p>This demonstrates that even though DoH bypasses the regular DNS query, it is not able to hide the destination IP address that is still present in clear text in the communications traffic.</p>
 
 <h3 id="blocking-doh">Blocking DNS over HTTPS (DoH)</h3>
-<p>Previously the <a href="https://codeberg.org/unixsheikh/dnsblockbuster">DNSBlockBuster</a> script already had some DoH domain names in the list, that I had randomly thrown in there, but I have since removed DoH blocking from the DNS server as it really need happen on the firewall level only.</p>
-<p>Blocking DoH via domain names doesn't make much sense in my humble opinion as a domain name has to be lookup in the first place. Most clients that use DoH has the host IP address for the DoH server encoded directly into the source code.</p>
+<p>Previously the <a href="https://codeberg.org/unixsheikh/dnsblockbuster">DNSBlockBuster</a> script already had some DoH domain names in the list, that I had randomly thrown in, but I have since removed DoH blocking from the DNS server as it really needs happen on the firewall level only.</p>
+<p>Blocking DoH via domain names doesn't make much sense in my humble opinion as a domain name has to be looked up in the first place. Most clients that use DoH has the host IP address for the DoH server encoded directly into the source code.</p>
 <p>I have searched multiple sites on the Internet, but haven't found a single up to date list of public DoH servers, so I have decided to make my own list called <a href="https://codeberg.org/unixsheikh/dohblockbuster">DoHBlockBuster</a>. However, this is a tremendous task, something which I know I wont have time to keep updated in the future unless others pitch in, so if you have got some spare time, please help keep the lists updated (either make a pull request or send me an email). Also this list is in no way exhaustive.</p>
 <p>If you don't use IPv6 you can block all outgoing IPv6 traffic and then only use the IPv4 list from DoHBlockBuster. Change the <code>pass out</code> parameter, in the "Default protect and block" section of <code>/etc/pf.conf</code>, to <code>pass out inet</code>. That way you only allow outgoing IPv4 traffic and don't need to specifically block IPv6 DoH IP addresses.</p>
 <p>Download the lists from <a href="https://codeberg.org/unixsheikh/dohblockbuster">DoHBlockBuster</a> and edit the lists to suit your needs and put them somewhere on disk.</p>
@@ -1099,8 +1099,8 @@ Nov 05 23:30:34 unbound[12636:0] reply: 192.168.1.5 www.wikipedia.org. A IN NOER
 table &lt;block_doh&gt; persist file "/etc/pf-block-lists/dohblockbuster-ipv4.txt"
 </code></pre>
 <p>If you need IPv6 then add that too:</p>
-<pre><code>table &lt;block_doh&gt; persist file "/etc/pf-block-lists/dohblockbuster-ipv6.txt"</code></pre>
-<p>And then add a <code>block</code> to the "Default protect and block" section of the firewall:</p>
+<pre><code>table &lt;block_doh&gt; persist file "/etc/pf-block-lists/dohblockbuster-ipv4.txt" file "/etc/pf-block-lists/dohblockbuster-ipv6.txt"</code></pre>
+<p>And then add a <code>block</code> to the "Protect and block by default" section of the firewall:</p>
 <pre><code># Let's block DoH.
 block in quick on { $g_lan $c_lan $p_lan } to &lt;block_doh&gt;
 </code></pre>
