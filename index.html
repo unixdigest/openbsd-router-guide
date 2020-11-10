@@ -18,7 +18,7 @@
         <td>
             <h1 class="title">OpenBSD Router Guide</h1>
             <h4>Network segmenting firewall, DHCP, DNS with Unbound, domain blocking and much more<br>
-                <span style="font-size:x-small;font-weight:initial;">OpenBSD: 6.8 · Published: 2020-11-05 · Updated: 2020-11-10 · Version: 1.2.0</span>
+                <span style="font-size:x-small;font-weight:initial;">OpenBSD: 6.8 · Published: 2020-11-05 · Updated: 2020-11-10 · Version: 1.3.0</span>
             </h4>
         </td>
     </tr>
@@ -368,7 +368,7 @@ table &lt;martians&gt; { 0.0.0.0/8 10.0.0.0/8 127.0.0.0/8 169.254.0.0/16     \
 # Protect and block by default
 #---------------------------------#
 set skip on lo0
-match in all scrub (no-df random-id max-mss 1440)
+match in all scrub (max-mss 1440)
 
 # Spoofing protection for all interfaces.
 antispoof quick for { $g_lan $c_lan $p_lan }
@@ -387,12 +387,18 @@ block return in on { $g_lan $c_lan $p_lan }
 # Let's log that too.
 block drop in log on $ext_if
 
+# Allow ICMP.
+match in on $ext_if inet proto icmp icmp-type {echoreq } tag ICMP_IN
+block drop in on $ext_if proto icmp
+pass in proto icmp tagged ICMP_IN max-pkt-rate 100/10
+pass in on $ext_if inet proto icmp icmp-type { 3 code 4, 11 code 0}
+
 # Default allow all NICs to pass out IPv4 and IPv6 data through the Ethernet port.
 pass out
 </code></pre>
 <p>My ISP hasn't rolled out IPv6 yet so I don't use it. If you don't need it either, you can change the <code>pass out</code> parameter to <code>pass out inet</code></p>
-<p><code>scrub</code> enables a "clean up" of packet content, causing fragmented packets to be assembled. <code>scrub</code> also provides some protection against some kinds of attacks based on incorrect handling of packet fragments.</p>
-<p>The <code>antispoof</code> modifier is a very important protection. Spoofing is when someone fakes an IP address. The <code>antispoof</code> modifier expands to a set of filter rules that will block all traffic with a source IP from the network, directly connected to the specified interface, from entering the system through any other interface. This is sometimes referred to as "bleeding over" or "bleeding through".</p>
+<p><a href="https://man.openbsd.org/pf.conf#Scrub">scrub</a> enables a "clean up" of packet content, causing fragmented packets to be assembled. <code>scrub</code> also provides some protection against some kinds of attacks based on incorrect handling of packet fragments.</p>
+<p>The <a href="https://man.openbsd.org/pf.conf#Blocking_Spoofed_Traffic">antispoof</a> modifier is a very important protection. Spoofing is when someone fakes an IP address. The <code>antispoof</code> modifier expands to a set of filter rules that will block all traffic with a source IP from the network, directly connected to the specified interface, from entering the system through any other interface. This is sometimes referred to as "bleeding over" or "bleeding through".</p>
 <p>The above <code>antispoof</code> directive is translated by PF into the following:</p>
 <p>block drop in quick on ! em1 inet from 192.168.1.0/24 to any<br>
 block drop in quick inet from 192.168.1.1 to any<br>
@@ -404,6 +410,15 @@ block drop in quick inet from 192.168.3.1 to any<br>
 <p>If we take, e.g., the <code>em1</code> NIC rule <code>block drop in quick on ! em1 inet from 192.168.1.0/24 to any</code> then that means: <i>block any traffic from the network with IP addresses ranging from 192.168.1.1 to 192.168.1.255, that doesn't originate from the em1 interface itself, and that is going anywhere</i>. Since the <code>em1</code> interface is the NIC in charge of all IP addresses in that specific range, then no traffic with such an IP address should originate from any other NIC.</p>
 <p class="info info-red" style="font-size:initial;"><b>WARNING:</b><br>Usage of <code>antispoof</code> should be <b>restricted</b> to interfaces that have been assigned an IP address, meaning that if you have unused NICs, or ports on a NIC, make sure to assign an IP address to each or don't include these in the <code>antispoof</code> option.</p>
 <p>The IP addresses in the <code>martians</code> macro constitutes the <a href="https://tools.ietf.org/html/rfc1918">RFC1918</a> addresses which are not to be used on the Internet. Traffic to and from such addresses is dropped on the routers external interface.</p>
+<p>We are allowing <a href="https://en.wikipedia.org/wiki/Internet_Control_Message_Protocol">ICMP</a> in our setup, even though some network administrators completely block ICMP. People mainly block ICMP completely because of unwarranted actions such as network discovery attacks, covert communication channels, <a href="https://en.wikipedia.org/wiki/Ping_sweep">ping sweep</a>, <a href="https://en.wikipedia.org/wiki/Ping_flood">ping flood</a>, <a href="https://en.wikipedia.org/wiki/ICMP_tunnel">ICMP tunneling</a> and <a href="https://en.wikipedia.org/wiki/ICMP_Redirect_Message#Redirect">ICMP redirecting</a>. However, ICMP is much more than answering pings. If we block ICMP completely, diagnostics, reliability, and network performance may suffer as a result because important mechanisms are disabled when the ICMP protocol is restricted.</p>
+<p>Some of the reaons why ICMP shouldn't be blocked:</p>
+<ul>
+    <li>Path MTU discovery (PMTUD) is used to determine the maximum transmission unit size on network devices that connects the source and destination to avoid IP fragmentation. ICMP type 3, code 4, and max packet size are returned when a packet exceeds the MTU size of a network device on the connected path. When these ICMP messages are blocked, the destination system continuously requests undelivered packets and the source system continues to resend them infinitely but to no avail. The behaviour can result in an ICMP <a href="https://en.wikipedia.org/wiki/Black_hole_%28networking%29">black hole</a>.</li>
+    <li>Time to live (TTL) defines the lifespan of a data packet. A network with ICMP blocked will not receive type 11, time exceeded, code 0, time exceeded in transit error messages. This means that the source host will not be notified to increase the lifespan of the data to successfully reach the destination, if the datagram fails to reach the destination.</li>
+    <li>Poor performance because of blocking ICMP redirect. ICMP redirect is used by a router to inform a host of a direct path from the source host to a destination host. This reduces the amount of hops data has to travel through to reach the destination. With ICMP blocked, the host will not be aware of the most optimal route to the destination.</li>
+</ul>
+<p>In the above setup we allow ICMP, but put a "rate limit" on the number of ping requests the router will answer. With the <code>max-pkt-rate 100/10</code> modifier the router will stop responding to pings if we get a more than a 100 pings in 10 seconds.</p>
+<p>Should you still want to completely block ICMP for some reason, simply remove the 4 rules after the "Allow ICMP" comment.</p>
 <p>Now we get to the LAN segment for the grown-ups in the house.</p>
 <pre><code>#---------------------------------#
 # Grown-ups LAN Setup
