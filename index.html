@@ -92,6 +92,7 @@
         <ul>
             <li><a href="#inspecting-doh">Inspecting DNS over HTTPS (DoH)</a></li>
             <li><a href="#how-to-contribute">How to contribute to the guide?</a></li>
+            <li><a href="#todo">TODO</a></li>
         </ul>
     </li>
 </ul>
@@ -162,7 +163,7 @@ At present, as far as I know, none of the OpenBSD wireless drivers are fully wit
 <h3 id="setting-up-the-network">Setting up the network</h3>
 <p>The first thing we'll setup is the different NICs on our OpenBSD router. On my particular machine I have disabled the NIC that is build into the motherboard via the BIOS and I am only going to use the four port Intel knockoff NIC.</p>
 <p>If you're following this tutorial and only want a basic firewall then you need at least two separate NICs.</p>
-<p>Before we begin make sure you have read and understood the different options in <a href="https://man.openbsd.org/hostname.if">hostname.if</a> man page.</p>
+<p>Before we begin make sure you have read and understood the different options in <a href="https://man.openbsd.org/hostname.if">hostname.if</a> man page. Also take a look at the networking section in the <a href="https://www.openbsd.org/faq/faq6.html">OpenBSD FAQ</a>.</p>
 <p>Since I am using Intel the <a href="https://man.openbsd.org/em">em</a> driver is the one OpenBSD loads and each port on the NIC is listed as a separate card. This means that each card is listed with <code>emX</code> where X is the actual number of the port on the given card.</p>
 <p>A <code>dmesg</code> lists my NIC with the four ports like this:</p>
 <pre><code class="command"># dmesg</code>
@@ -782,9 +783,6 @@ wikipedia.org.  600     IN      A       91.198.174.192
     # syntax:
     # interface: 127.0.0.1@5353
 
-    # Disable IPv6.
-    do-ip6: no
-
     # Control who has access.
     access-control: 0.0.0.0/0 refuse
     access-control: 127.0.0.0/8 allow
@@ -826,7 +824,7 @@ remote-control:
 use-syslog: no
 log-time-ascii: yes
 </code></pre>
-<p class="info info-blue" style="font-size:initial;"><b>NOTE:</b><br>We do not use the full path to the log file because Unbound is chrooted. With the <code>logfile</code> option above the log file ends up in <code>/var/unbound/log/unbound.conf.</code></p>
+<p class="info info-blue" style="font-size:initial;"><b>NOTE:</b><br>We do not use the full path to the log file because Unbound is chrooted. With the <code>logfile</code> option above the log file ends up in <code>/var/unbound/log/unbound.log.</code></p>
 <p>Then restart Unbound:</p>
 <pre><code class="command"># rcctl restart unbound
 </code></pre>
@@ -1086,6 +1084,16 @@ Nov 05 23:30:34 unbound[12636:0] reply: 192.168.1.5 www.wikipedia.org. A IN NOER
     <li>Submit a pull request for consideration</li>
 </ul>
 <p>You can also just use <a href="https://www.unixsheikh.com/contact.html">email</a> :)</p>
+
+<h3 id="todo">TODO</h3>
+<p>Planned upcoming improvements.</p>
+<ul>
+    <li>Blocking DoH (I originally had this planed when I wrote the guide, but forgot to add it)</li>
+    <li>IPv6</li>
+    <li>More on network monitoring</li>
+    <li>Local search domain</li>
+</ul>
+<p>If you have anything important or worth while you think this guide is missing, please let me know, I'll look into it.</p>
 
 </article>
 <footer class="info info-grey" style="text-align:center;">
