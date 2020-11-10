@@ -18,7 +18,7 @@
         <td>
             <h1 class="title">OpenBSD Router Guide</h1>
             <h4>Network segmenting firewall, DHCP, DNS with Unbound, domain blocking and much more<br>
-                <span style="font-size:x-small;font-weight:initial;">OpenBSD: 6.8 · Published: 2020-11-05 · Updated: 2020-11-10 · Version: 1.1.3</span>
+                <span style="font-size:x-small;font-weight:initial;">OpenBSD: 6.8 · Published: 2020-11-05 · Updated: 2020-11-10 · Version: 1.2.0</span>
             </h4>
         </td>
     </tr>
@@ -91,6 +91,7 @@
     <li><a href="#appendix">Appendix</a>
         <ul>
             <li><a href="#inspecting-doh">Inspecting DNS over HTTPS (DoH)</a></li>
+            <li><a href="#blocking-doh">Blocking DNS over HTTPS (DoH)</a></li>
             <li><a href="#how-to-contribute">How to contribute to the guide?</a></li>
             <li><a href="#todo">TODO</a></li>
         </ul>
@@ -386,9 +387,10 @@ block return in on { $g_lan $c_lan $p_lan }
 # Let's log that too.
 block drop in log on $ext_if
 
-# Default allow all NICs to pass out IPv4 data through the Ethernet port.
-pass out inet
+# Default allow all NICs to pass out IPv4 and IPv6 data through the Ethernet port.
+pass out
 </code></pre>
+<p>My ISP hasn't rolled out IPv6 yet so I don't use it. If you don't need it either, you can change the <code>pass out</code> parameter to <code>pass out inet</code></p>
 <p><code>scrub</code> enables a "clean up" of packet content, causing fragmented packets to be assembled. <code>scrub</code> also provides some protection against some kinds of attacks based on incorrect handling of packet fragments.</p>
 <p>The <code>antispoof</code> modifier is a very important protection. Spoofing is when someone fakes an IP address. The <code>antispoof</code> modifier expands to a set of filter rules that will block all traffic with a source IP from the network, directly connected to the specified interface, from entering the system through any other interface. This is sometimes referred to as "bleeding over" or "bleeding through".</p>
 <p>The above <code>antispoof</code> directive is translated by PF into the following:</p>
@@ -761,7 +763,7 @@ wikipedia.org.  600     IN      A       91.198.174.192
 <p>Some public DNS service providers state that from a privacy perspective DoH is better than the alternatives, such as <a href="https://en.wikipedia.org/wiki/DNS_over_TLS">DNS over TLS (DoT)</a>, as DNS queries are hidden within the larger flow of HTTPS traffic. This gives network administrators less visibility but provides users with more privacy.</p>
 <p>That message is problematic. While it is true that the initial domain name lookup is hidden in the HTTPS traffic, the destination IP address provided by the DoH server isn't. When the client application visits the destination IP address, both the source IP address and the destination IP addresses are logged at the ISP level (and possibly multiple other levels as well).</p>
 <p>While it isn't immediately possible to determine exactly what domain name the user is trying to reach on the destination web server, especially if the web server is running multiple domains under the same IP address, it is definitely neither impossible nor even difficult.</p>
-<p class="info info-blue" style="font-size:initial;"><b>NOTE:</b><br>In the appendix you can find a section called <a href="#inspecting-doh">Inspecting DNS over HTTPS (DoH)</a>, in which we will look at a demonstration on how the destination IP address is revealed in the DoH communication.</p>
+<p class="info info-blue" style="font-size:initial;"><b>NOTE:</b><br>In the appendix you can find a section called <a href="#inspecting-doh">Inspecting DNS over HTTPS (DoH)</a>, in which we will look at a demonstration on how the destination IP address is revealed in the DoH communication. You can also find a section called <a href="#blocking-doh">Blocking DNS over HTTPS (DoH)</a> in which we use the PF firewall to block known public DoH servers.</p>
 
 <h2 id="unbound-setup">Setting up Unbound</h2>
 
@@ -867,7 +869,7 @@ thread0.num.expired=0
 
 <h3 id="lets-block-some-domains">Let's block some domains!</h3>
 <p>Now we get to the interesting part about domain blocking.</p>
-<p>I have created a simple shell script called <a href="https://codeberg.org/unixsheikh/dnsblockbuster">DNSBlockBuster</a> that automatically downloads a set of hosts files from various online sources, concatenates them into one, does some cleanup, and then convert the result into a domain block list for both Unbound and dnsmasq.</p>
+<p>I have created a simple shell script called <a href="https://codeberg.org/unixsheikh/dnsblockbuster">DNSBlockBuster</a> that automatically downloads a set of hosts files from various online sources, concatenates them into one, does some cleanup, and then convert the result into a domain block list for both Unbound and dnsmasq. It mainly blocks ads, porn sites and tracking.</p>
 <p>With DNSBlockBuster you have the option to create a whitelist, should any of the domains listed in the hosts files be a false positive for you, and you can add your own blacklist in case you want to manually block some domains that aren't listed in the hosts files. You can also easily add new block lists or remove any of the provided block lists.</p>
 <p>You don't need to use my script of course, but I will use the script in this tutorial.</p>
 <p>Currently the script creates a huge domain list with almost two million domains listed and Unbound takes up about 705MB of memory in total when the entire block list is loaded.</p>
@@ -1085,6 +1087,31 @@ Nov 05 23:30:34 unbound[12636:0] reply: 192.168.1.5 www.wikipedia.org. A IN NOER
 <p>Furthermore, in this specific example we can even get straight to the website of "freebsd.org" just by inputting the destination IP address 96.47.72.84 into the browsers address field.</p>
 <p>This demonstrates that even though DoH bypasses the regular DNS query, it is not able to hide the destination IP address that is still present in clear text in the communications traffic.</p>
 
+<h3 id="blocking-doh">Blocking DNS over HTTPS (DoH)</h3>
+<p>Previously the <a href="https://codeberg.org/unixsheikh/dnsblockbuster">DNSBlockBuster</a> script already had some DoH domain names in the list, that I had randomly thrown in there, but I have since removed DoH blocking from the DNS server as it really need happen on the firewall level only.</p>
+<p>Blocking DoH via domain names doesn't make much sense in my humble opinion as a domain name has to be lookup in the first place. Most clients that use DoH has the host IP address for the DoH server encoded directly into the source code.</p>
+<p>I have searched multiple sites on the Internet, but haven't found a single up to date list of public DoH servers, so I have decided to make my own list called <a href="https://codeberg.org/unixsheikh/dohblockbuster">DoHBlockBuster</a>. However, this is a tremendous task, something which I know I wont have time to keep updated in the future unless others pitch in, so if you have got some spare time, please help keep the lists updated (either make a pull request or send me an email). Also this list is in no way exhaustive.</p>
+<p>If you don't use IPv6 you can block all outgoing IPv6 traffic and then only use the IPv4 list from DoHBlockBuster. Change the <code>pass out</code> parameter, in the "Default protect and block" section of <code>/etc/pf.conf</code>, to <code>pass out inet</code>. That way you only allow outgoing IPv4 traffic and don't need to specifically block IPv6 DoH IP addresses.</p>
+<p>Download the lists from <a href="https://codeberg.org/unixsheikh/dohblockbuster">DoHBlockBuster</a> and edit the lists to suit your needs and put them somewhere on disk.</p>
+<p>I have made a subdirectory <code>/etc/pf-block-lists</code> where I place all IP block lists I need for PF.</p>
+<p>Then create a persistent file for PF in the "Tables" section of <code>/etc/pf.conf</code>:</p>
+<pre><code># Public DoH servers.
+table &lt;block_doh&gt; persist file "/etc/pf-block-lists/dohblockbuster-ipv4.txt"
+</code></pre>
+<p>If you need IPv6 then add that too:</p>
+<pre><code>table &lt;block_doh&gt; persist file "/etc/pf-block-lists/dohblockbuster-ipv6.txt"</code></pre>
+<p>And then add a <code>block</code> to the "Default protect and block" section of the firewall:</p>
+<pre><code># Let's block DoH.
+block in quick on { $g_lan $c_lan $p_lan } to &lt;block_doh&gt;
+</code></pre>
+<p>Reload with:</p>
+<pre><code class="command"># pfctl -f /etc/pf.conf</code></pre>
+<p>Check the list with:</p>
+<pre><code class="command"># pfctl -vvt block_doh -T show</code></pre>
+<p>If - after some time - you want to see what IP addresses that actually has been used in a blocking, you can filter the output:</p>
+<pre><code class="command"># pfctl -vvt block_doh -T show | awk '/\[/ {p+=$4; b+=$6} END {print p, b}'</code></pre>
+<p>As mentioned previously, this solution doesn't take unknown DoH servers into consideration. Also in order for the list to be effective, it needs to be kept up to date.</p>
+
 <h3 id="how-to-contribute">How to contribute to the guide?</h3>
 <p>Please consider contributing if you have any comments, corrections, or changes you consider appropriate.</p>
 <ul>
@@ -1096,7 +1123,6 @@ Nov 05 23:30:34 unbound[12636:0] reply: 192.168.1.5 www.wikipedia.org. A IN NOER
 <h3 id="todo">TODO</h3>
 <p>Planned upcoming improvements.</p>
 <ul>
-    <li>Blocking DoH (I originally had this planed when I wrote the guide, but forgot to add it)</li>
     <li>IPv6</li>
     <li>More on network monitoring</li>
     <li>Local search domain</li>
