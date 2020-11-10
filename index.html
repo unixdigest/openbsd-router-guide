@@ -18,7 +18,7 @@
         <td>
             <h1 class="title">OpenBSD Router Guide</h1>
             <h4>Network segmenting firewall, DHCP, DNS with Unbound, domain blocking and much more<br>
-                <span style="font-size:x-small;font-weight:initial;">OpenBSD: 6.8 · Published: 2020-11-05 · Updated: 2020-11-10 · Version: 1.3.1</span>
+                <span style="font-size:x-small;font-weight:initial;">OpenBSD: 6.8 · Published: 2020-11-05 · Updated: 2020-11-10 · Version: 1.3.2</span>
             </h4>
         </td>
     </tr>
@@ -92,6 +92,7 @@
         <ul>
             <li><a href="#inspecting-doh">Inspecting DNS over HTTPS (DoH)</a></li>
             <li><a href="#blocking-doh">Blocking DNS over HTTPS (DoH)</a></li>
+            <li><a href="#recommended-reading">Recommended reading</a></li>
             <li><a href="#how-to-contribute">How to contribute to the guide?</a></li>
             <li><a href="#todo">TODO</a></li>
         </ul>
@@ -1126,6 +1127,13 @@ block in quick on { $g_lan $c_lan $p_lan } to &lt;block_doh&gt;
 <p>If - after some time - you want to see what IP addresses that actually has been used in a blocking, you can filter the output:</p>
 <pre><code class="command"># pfctl -vvt block_doh -T show | awk '/\[/ {p+=$4; b+=$6} END {print p, b}'</code></pre>
 <p>As mentioned previously, this solution doesn't take unknown DoH servers into consideration. Also in order for the list to be effective, it needs to be kept up to date.</p>
+
+<h3 id="recommended-reading">Recommended reading</h3>
+<ul>
+    <li><a href="https://www.openbsd.org/faq/pf/index.html">OpenBSD PF - User's Guide</a> from the OpenBSD FAQ.</li>
+    <li><a href="https://mwl.io/nonfiction/os#ao2e">Absolute OpenBSD, 2nd Edition</a> by Michael Warren Lucas.</li>
+    <li><a href="https://mwl.io/nonfiction/networking#n4sa">Networking for System Administrators</a> by Michael Warren Lucas.</li>
+</ul>
 
 <h3 id="how-to-contribute">How to contribute to the guide?</h3>
 <p>Please consider contributing if you have any comments, corrections, or changes you consider appropriate.</p>
