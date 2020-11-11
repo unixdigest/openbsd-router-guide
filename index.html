@@ -18,7 +18,7 @@
         <td>
             <h1 class="title">OpenBSD Router Guide</h1>
             <h4>Network segmenting firewall, DHCP, DNS with Unbound, domain blocking and much more<br>
-                <span style="font-size:x-small;font-weight:initial;">OpenBSD: 6.8 · Published: 2020-11-05 · Updated: 2020-11-10 · Version: 1.3.3</span>
+                <span style="font-size:x-small;font-weight:initial;">OpenBSD: 6.8 · Published: 2020-11-05 · Updated: 2020-11-11 · Version: 1.3.4</span>
             </h4>
         </td>
     </tr>
@@ -105,6 +105,7 @@
 <p>A firewall between you and your ISP modem or router cannot protect your modem or router device against attacks, but it can protect your computers and devices on the inside of the network, and it can help you monitor and control the traffic that comes and goes to and from your local network.</p>
 <p>Without a firewall between your local network and the ISP modem or router you could basically consider this an open door policy, like leaving the door to your house wide open, because you cannot trust the equipment from your ISP.</p>
 <p>It is always a really good idea to put a real firewall between your local network and the Internet, and with OpenBSD you get an very solid solution.</p>
+<p class="info info-blue" style="font-size:initial;"><b>NOTE:</b><br>Currently this guide only deals with IPv4 as most people still don't use IPv6 and many ISPs also still only use IPv4, but IPv6 is planned for a future update of the guide.</p>
 
 <h2 id="the-hardware">The hardware</h2>
 <p>You don't have to buy expensive hardware to get an effective router and firewall for your house or office. Even with cheap and "low end" hardware you can get a very solid solution.</p>
@@ -394,10 +395,9 @@ block drop in on $ext_if proto icmp
 pass in proto icmp tagged ICMP_IN max-pkt-rate 100/10
 pass in on $ext_if inet proto icmp icmp-type { 3 code 4, 11 code 0}
 
-# Default allow all NICs to pass out IPv4 and IPv6 data through the Ethernet port.
-pass out
+# Default allow all NICs to pass out data through the Ethernet port.
+pass out inet
 </code></pre>
-<p>My ISP hasn't rolled out IPv6 yet so I don't use it. If you don't need it either, you can change the <code>pass out</code> parameter to <code>pass out inet</code></p>
 <p><a href="https://man.openbsd.org/pf.conf#Scrub">scrub</a> enables a "clean up" of packet content, causing fragmented packets to be assembled. <code>scrub</code> also provides some protection against some kinds of attacks based on incorrect handling of packet fragments.</p>
 <p>The <a href="https://man.openbsd.org/pf.conf#Blocking_Spoofed_Traffic">antispoof</a> modifier is a very important protection. Spoofing is when someone fakes an IP address. The <code>antispoof</code> modifier expands to a set of filter rules that will block all traffic with a source IP from the network, directly connected to the specified interface, from entering the system through any other interface. This is sometimes referred to as "bleeding over" or "bleeding through".</p>
 <p>The above <code>antispoof</code> directive is translated by PF into the following:</p>
@@ -1149,7 +1149,7 @@ block in quick on { $g_lan $c_lan $p_lan } to &lt;block_doh&gt;
     <li>Add a list of motherboards that works well with OpenBSD</li>
     <li>More on network monitoring</li>
     <li>Local search domain</li>
-    <li>IPv6 (maybe)</li>
+    <li>IPv6</li>
 </ul>
 <p>If you have anything important or worth while you think this guide is missing, please let me know, I'll look into it.</p>
 
