@@ -18,7 +18,7 @@
         <td>
             <h1 class="title">OpenBSD Router Guide</h1>
             <h4>Network segmenting firewall, DHCP, DNS with Unbound, domain blocking and much more<br>
-                <span style="font-size:x-small;font-weight:initial;">OpenBSD: 6.8 · Published: 2020-11-05 · Updated: 2020-11-11 · Version: 1.3.4</span>
+                <span style="font-size:x-small;font-weight:initial;">OpenBSD: 6.8 · Published: 2020-11-05 · Updated: 2020-11-12 · Version: 1.3.5</span>
             </h4>
         </td>
     </tr>
@@ -105,6 +105,7 @@
 <p>A firewall between you and your ISP modem or router cannot protect your modem or router device against attacks, but it can protect your computers and devices on the inside of the network, and it can help you monitor and control the traffic that comes and goes to and from your local network.</p>
 <p>Without a firewall between your local network and the ISP modem or router you could basically consider this an open door policy, like leaving the door to your house wide open, because you cannot trust the equipment from your ISP.</p>
 <p>It is always a really good idea to put a real firewall between your local network and the Internet, and with OpenBSD you get an very solid solution.</p>
+
 <p class="info info-blue" style="font-size:initial;"><b>NOTE:</b><br>Currently this guide only deals with IPv4 as most people still don't use IPv6 and many ISPs also still only use IPv4, but IPv6 is planned for a future update of the guide.</p>
 
 <h2 id="the-hardware">The hardware</h2>
@@ -112,7 +113,8 @@
 <p>I have build multiple solutions with the <a href="https://www.asrock.com/mb/Intel/Q1900DC-ITX/">ASRock Q1900DC-ITX</a> motherboard that comes with an Intel Quad-Core Celeron processor.</p>
 <p><img src="/includes/img/asrock-q1900dc-itx.png" alt="ASRock Q1900DC-ITX motherboard"></p>
 <p>I'll admit, it's a pretty "crappy" motherboard, but it gets the job done and I have several builds that have run very solid for many years on gigabit networks with full saturation and the firewall, DNS, etc. working "overtime" and the CPU hardly breaks a sweat.</p>
-<p>The ASRock Q1900DC-ITX motherboard has the advantage that it comes with a DC-In Jack that is compatible with a 9~19V power adapter, making it very power saving. Unfortunatly the ASRock Q1900DC-ITX motherboard is no longer made, but I'm just using it as an example, I have used several other cheap boards as well.</p>
+<p>The ASRock Q1900DC-ITX motherboard has the advantage that it comes with a DC-In Jack that is compatible with a 9~19V power adapter, making it very power saving. Unfortunately the ASRock Q1900DC-ITX motherboard is no longer made, but I'm just using it as an example, I have used several other cheap boards as well.</p>
+<p class="info info-blue" style="font-size:initial;"><b>NOTE:</b><br>Most of the current ASRock J-series can be used. Search for any J-series board on Amazon and a list will show up on recent hardware. Such as <a href="https://www.amazon.com/ASRock-Motherboard-Mini-DDR3-Q1900B-ITX/">ASRock Q1900B-ITX</a>, <a href="https://www.amazon.com/ASRock-J5005-ITX-Quad-Core-Processor-Motherboards/">ASRock J5005-ITX</a> and <a href="https://www.amazon.com/ASRock-Motherboard-CPU-Combo-J3355M/">ASRock J3335M</a> (These are not affiliate links!). Many other low power brands from other motherboard producers can be uses as well.</p>
 <p>I have also used the ASRock Q1900-ITX (it doesn't come with the DC-In Jack) combined with a PicoPSU.</p>
 <p><img src="/includes/img/picopsu.png" alt="PicoPSU power supply"></p>
 <p>You can find different brands and versions of the PicoPSU, some are better quality than others. I have two different brands, the original and a cheaper knockoff, both performs very well and they save quite a bit of power contrary to running with a normal power supply.</p>
@@ -1146,7 +1148,6 @@ block in quick on { $g_lan $c_lan $p_lan } to &lt;block_doh&gt;
 <h3 id="todo">TODO</h3>
 <p>Planned upcoming improvements.</p>
 <ul>
-    <li>Add a list of motherboards that works well with OpenBSD</li>
     <li>More on network monitoring</li>
     <li>Local search domain</li>
     <li>IPv6</li>
