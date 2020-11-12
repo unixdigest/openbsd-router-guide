@@ -18,7 +18,7 @@
         <td>
             <h1 class="title">OpenBSD Router Guide</h1>
             <h4>Network segmenting firewall, DHCP, DNS with Unbound, domain blocking and much more<br>
-                <span style="font-size:x-small;font-weight:initial;">OpenBSD: 6.8 · Published: 2020-11-05 · Updated: 2020-11-12 · Version: 1.3.5</span>
+                <span style="font-size:x-small;font-weight:initial;">OpenBSD: 6.8 · Published: 2020-11-05 · Updated: 2020-11-12 · Version: 1.4.0</span>
             </h4>
         </td>
     </tr>
@@ -92,6 +92,7 @@
         <ul>
             <li><a href="#inspecting-doh">Inspecting DNS over HTTPS (DoH)</a></li>
             <li><a href="#blocking-doh">Blocking DNS over HTTPS (DoH)</a></li>
+            <li><a href="#dhcp-domain">Adding the domain-name option to DHCP and using a FQDM</a></li>
             <li><a href="#recommended-reading">Recommended reading</a></li>
             <li><a href="#how-to-contribute">How to contribute to the guide?</a></li>
             <li><a href="#todo">TODO</a></li>
@@ -211,7 +212,7 @@ em2: flags=8843&lt;UP,BROADCAST,RUNNING,SIMPLEX,MULTICAST&gt; mtu 1500
 <p>Now OpenBSD will be able to forward IPv4 packets from one NIC to another. Or, as in our specific case with the four port NIC, from one port to another. Take a look at the man page if you need IPv6.</p>
 
 <h2 id="dhcp">DHCP</h2>
-<p>Now we're ready to setup the <a href="https://en.wikipedia.org/wiki/Dynamic_Host_Configuration_Protocol">Dynamic Host Configuration Protocol (DHCP)</a> service we will be running for our different PCs and devices attached to the different LANs. Before we begin make sure you have read and understood the different options in the <a href="https://man.openbsd.org/dhcpd.conf">dhcpd.conf</a> man page.</p>
+<p>Now we're ready to setup the <a href="https://en.wikipedia.org/wiki/Dynamic_Host_Configuration_Protocol">Dynamic Host Configuration Protocol (DHCP)</a> service we will be running for our different PCs and devices attached to the different LANs. Before we begin make sure you have read and understood the different options in the <a href="https://man.openbsd.org/dhcpd.conf">dhcpd.conf</a> man page. Also take a look at the <a href="https://man.openbsd.org/dhcp-options">dhcp-options</a> man page for options that <code>dhcpd</code> supports.</p>
 <p>We have the option to bind specific IP addresses to specific PCs or devices that connect to our different LAN ports. This is needed if we want to forward any traffic from the Internet to something like a web server. We can bind a specific IP address to a specific PC via the <a href="https://en.wikipedia.org/wiki/MAC_address">MAC address</a> on the NIC of the relevant machine.</p>
 <p>In this case I'll reserve all IP addresses ranging from 10 to 254 for the DHCP, while I'll leave the few left overs for any possible fixed addresses I might need.</p>
 <p>Edit <code>/etc/dhcpd.conf</code> with your favorite text editor and set it up to suit your needs.</p>
@@ -247,6 +248,7 @@ subnet 192.168.3.0 netmask 255.255.255.0 {
 <p>Then we just need to make sure we enable and start the <code>dhcpd</code> service:</p>
 <pre><code class="command"># rcctl enable dhcpd
 # rcctl start dhcpd</code></pre>
+<p>Take a look at the <a href="#dhcp-domain">Adding the domain-name option to DHCP and using a FQDM</a> in the appendix for information on how to easily add a <a href="https://en.wikipedia.org/wiki/Fully_qualified_domain_name">fully qualified domain name (FQDM)</a> to your setup and how you can use the <code>domain-name</code> option in DHCP to avoid having to type the FQDM each time you need it. The section will also show you how you can avoid having to remember IP addresses if your LAN has multiple computers or devices attached.</p>
 
 <h2 id="a-packet-filtering-firewall">PF - A packet filtering firewall</h2>
 <p>A packet-filtering firewall examines each packet that crosses the firewall and decides whether to accept or deny individual packets, based on examining fields in the packet's IP and protocol headers, according to the set of rules that you specify.</p>
@@ -1129,6 +1131,75 @@ block in quick on { $g_lan $c_lan $p_lan } to &lt;block_doh&gt;
 <p>If - after some time - you want to see what IP addresses that actually has been used in a blocking, you can filter the output:</p>
 <pre><code class="command"># pfctl -vvt block_doh -T show | awk '/\[/ {p+=$4; b+=$6} END {print p, b}'</code></pre>
 <p>As mentioned previously, this solution doesn't take unknown DoH servers into consideration. Also in order for the list to be effective, it needs to be kept up to date.</p>
+
+<h3 id="dhcp-domain">Adding the domain-name option to DHCP and using a FQDM</h3>
+<p>If I have setup my network such that all computers and device have fixed IP addresses and hostnames, many tools will not work out-of-the-box with these hostnames without adding a domain name to the DNS server. This is because a networking tool like <code>host</code> expects the lookup to be a hostname on a <a href="https://en.wikipedia.org/wiki/Fully_qualified_domain_name">fully qualified domain name (FQDM)</a>.</p>
+<p>Let's say that I have a computer setup on my LAN with the hostname "foo" and the fixed IP address 192.168.1.7. I may not remember that "foo" is the computer with that address. Or I may not remember which host has the IP address 192.168.1.7 associated with it.</p>
+<p>Not only does a FQDM make web development easier, but it also makes dealing with networking tools much easier. I can do stuff like:</p>
+<pre><code class="command">$ host foo.example.com
+foo.example.com has address 192.168.1.7
+</code></pre>
+<p>And I can do:</p>
+<pre><code class="command"># host 192.168.1.7
+7.1.168.192.in-addr.arpa domain name pointer foo.example.com
+</code></pre>
+<p>However, I don't want to type the full domain each time and by having DHCP add the <a href="https://man.openbsd.org/dhcp-options#option~24">domain-name</a> option to <code>/etc/resolv.conf</code> it will be appended automatically. I can know just do:</p>
+<pre><code class="command">$ host foo
+foo.example.com has address 192.168.1.7
+</code></pre>
+<p>Some people recommend that you register a domain name and then use that internally on your LAN, and while that certainly works, it is not necessary at all. For home usage you can use the domains <code>.intranet</code>, <code>.home</code> or <code>.lan</code> according to the <a href="https://tools.ietf.org/html/rfc6762#appendix-G">RFC 6762</a> without any problems. However, don't use <code>.local</code>.</p>
+<p>Let's start by making some changes to the <code>/etc/dhcpd.conf</code> configuration. Just to make it simple I'll only use the web server from the public LAN example, but you can expand this to any segment you like and you can also use this across segments if needed.</p>
+<p>In our current setup we already have the domain <code>example.com</code> attached to the web server so we can just use that. But if you don't have a public facing server that needs a real domain name, just change it to something like <code>net.home</code>. I have changed the name of our web server to "lilo" (yes, from Lilo &amp; Stitch, because it's way more cool that "Luke"!).</p>
+<pre><code>subnet 192.168.1.0 netmask 255.255.255.0 {
+    option domain-name-servers 192.168.1.1;
+    <b>option domain-name "example.com"</b>
+    option routers 192.168.1.1;
+    range 192.168.1.10 192.168.1.254;
+}
+subnet 192.168.2.0 netmask 255.255.255.0 {
+    option domain-name-servers 192.168.2.1;
+    <b>option domain-name "example.com"</b>
+    option routers 192.168.2.1;
+    range 192.168.2.10 192.168.2.254;
+}
+subnet 192.168.3.0 netmask 255.255.255.0 {
+    option domain-name-servers 192.168.3.1;
+    <b>option domain-name "example.com"</b>
+    option routers 192.168.3.1;
+    range 192.168.3.10 192.168.3.254;
+    host lilo.example.com {
+        fixed-address 191.168.3.2;
+        hardware ethernet 61:20:42:39:61:AF;
+        option host-name "lilo";
+    }
+}
+</code></pre>
+<p>If you prefer to use multiple domains rather than just one, say like <code>example.com</code> for your professional work, and then <code>net.home</code> for your private LAN, you can use a <a href="https://en.wikipedia.org/wiki/Search_domain">search domain</a> with the <code>domain-search</code> option in <code>/etc/dhcpd.conf</code> instead of the <code>domain-name</code> option. The difference between the two is that with <code>domain-name</code> only a single domain is appended, but with the <code>domain-search</code> option, multiple domains can be added and they are then "searched" one by one until the host is found.</p>
+<p>The <code>domain-search</code> option looks like this:</p>
+<pre><code>option domain-search "example.com", "net.home"</code></pre>
+<p>Then we need to setup Unbound to handle our fixed IP addresses. In this example we only have the web server, but you can use as many hosts as you need. You can just edit the main configuration file for Unbound, but I prefer to put this into a separate file and then include that from our main file. Create a new file called something like <code>/var/unbound/etc/unbound-local.conf</code> and setup your hosts:</p>
+<pre><code>local-data: "lilo.example.com IN A 192.168.3.2"
+local-data-ptr: "192.168.3.2 lilo.example.com"
+</code></pre>
+<p>Or if you use the <code>.net.home</code> version:</p>
+<pre><code>local-data: "lilo.net.home IN A 192.168.3.2"
+local-data-ptr: "192.168.3.2 lilo.net.home"
+</code></pre>
+<p>Then add the following to our "Our LAN segments." part of <code>/var/unbound/etc/unbound.conf</code>:</p>
+<pre><code>
+private-address: 192.168.0.0/16
+private-domain: example.com # Use net.home instead if you need that.
+include: "/var/unbound/etc/unbound-local.conf"
+</code></pre>
+<p>Restart dhcpd and Unbound:</p>
+<pre><code class="command"># rcctl restart dhcpd
+# rcctl restart unbound
+</code></pre>
+<p>If you pull our the Ethernet cable from one of the attached computers on one of the LANs and plug it back in, you'll notice that the <code>/etc/resolv.conf</code> has had the <code>domain</code> option added:</p>
+<pre><code>domain example.com
+nameserver 192.168.1.1
+</code></pre>
+<p>You can expand on the above example to multiple domains and multiple hosts across all segments.</p>
 
 <h3 id="recommended-reading">Recommended reading</h3>
 <ul>
