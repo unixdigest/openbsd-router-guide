@@ -1137,16 +1137,14 @@ block in quick on { $g_lan $c_lan $p_lan } to &lt;block_doh&gt;
 <p>If we setup our network such that all computers and device have fixed IP addresses and hostnames, many tools will not work out-of-the-box with these hostnames without adding a domain name to the DNS server. This is because a networking tool like <code>host</code> expects the lookup to be a hostname on a <a href="https://en.wikipedia.org/wiki/Fully_qualified_domain_name">fully qualified domain name (FQDM)</a>.</p>
 <p>Let's say that I have a computer setup on my LAN with the hostname "foo" and the fixed IP address 192.168.1.7. I may not remember that "foo" is the computer with that address, or I may not remember which host has the IP address 192.168.1.7 associated with it.</p>
 <p>With a FQDM we can do lookup like:</p>
-<pre><code class="command">$ host foo.example.com
-foo.example.com has address 192.168.1.7
-</code></pre>
+<pre><code class="command">$ host foo.example.com</code>
+<code>foo.example.com has address 192.168.1.7</code></pre>
 <p>And we can do:</p>
-<pre><code class="command"># host 192.168.1.7
-7.1.168.192.in-addr.arpa domain name pointer foo.example.com
-</code></pre>
+<pre><code class="command"># host 192.168.1.7</code>
+<code>7.1.168.192.in-addr.arpa domain name pointer foo.example.com</code></pre>
 <p>However, it is annoying to type the full domain each time. If we add the <a href="https://man.openbsd.org/dhcp-options#option~24">domain-name</a> option to <code>/etc/resolv.conf</code> the domain name will be appended automatically. We can know just do:</p>
-<pre><code class="command">$ host foo
-foo.example.com has address 192.168.1.7
+<pre><code class="command">$ host foo</code>
+<code>foo.example.com has address 192.168.1.7
 </code></pre>
 <p>Some people recommend that you register a domain name and then use that internally on your LAN, and while that certainly works, it is not necessary at all. For home usage you can use the TLDs <code>.intranet</code>, <code>.home</code> or <code>.lan</code> according to the <a href="https://tools.ietf.org/html/rfc6762#appendix-G">RFC 6762</a> without any problems. However, don't use <code>.local</code>.</p>
 <p>Let's start by making some changes to the <code>/etc/dhcpd.conf</code> configuration. Just to make it simple I'll only use the web server from the public LAN example, but you can expand this to any segment you like and you can also use this across segments if needed.</p>
@@ -1188,8 +1186,7 @@ local-data-ptr: "192.168.3.2 lilo.net.home"
 </code></pre>
 <p>Notice how the IP address in the <code>local-data-ptr</code> field is backwards, that is not by mistake.</p>
 <p>Then add the following to our <code>/var/unbound/etc/unbound.conf</code>:</p>
-<pre><code>
-private-address: 192.168.0.0/16
+<pre><code>private-address: 192.168.0.0/16
 private-domain: example.com # Use net.home instead if you need that.
 include: "/var/unbound/etc/unbound-local.conf"
 </code></pre>
