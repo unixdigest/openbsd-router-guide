@@ -1151,19 +1151,19 @@ block in quick on { $g_lan $c_lan $p_lan } to &lt;block_doh&gt;
 <p>In our current setup we already have the domain <code>example.com</code> attached to the web server so we can just use that. But if you don't have a public facing server that needs a real domain name, just change it to something like <code>net.home</code>. I have changed the name of our web server to "lilo" (yes, from Lilo &amp; Stitch, because it's way more cool that "Luke"!).</p>
 <pre><code>subnet 192.168.1.0 netmask 255.255.255.0 {
     option domain-name-servers 192.168.1.1;
-    <b>option domain-name "example.com"</b>
+    <b>option domain-name "example.com";</b>
     option routers 192.168.1.1;
     range 192.168.1.10 192.168.1.254;
 }
 subnet 192.168.2.0 netmask 255.255.255.0 {
     option domain-name-servers 192.168.2.1;
-    <b>option domain-name "example.com"</b>
+    <b>option domain-name "example.com";</b>
     option routers 192.168.2.1;
     range 192.168.2.10 192.168.2.254;
 }
 subnet 192.168.3.0 netmask 255.255.255.0 {
     option domain-name-servers 192.168.3.1;
-    <b>option domain-name "example.com"</b>
+    <b>option domain-name "example.com";</b>
     option routers 192.168.3.1;
     range 192.168.3.10 192.168.3.254;
     host lilo.example.com {
