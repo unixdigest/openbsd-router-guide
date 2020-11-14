@@ -1056,7 +1056,7 @@ Address: 2620:0:862:ed1a::1
 
 <h3 id="inspecting-doh">Inspecting DNS over HTTPS (DoH)</h3>
 <p>I want to illustrate the fact that DoH doesn't really provide any true privacy as both the source IP address and the destination IP address can be seen clearly in the HTTPS communication.</p>
-<p>First I have made sure that DoH is disabled in Firefox, on one of the computers on the grown-ups LAN, and are monitoring traffic on the <code>em1</code> interface with the usage of <a href="https://man.openbsd.org/tcpdump">tcpdump</a>. I have also enabled the log file on Unbound, just to avoid filling op syslog with too much DNS noise, and I am using <a href="https://man.openbsd.org/tail">tail</a> to monitor the log.</p>
+<p>First I have made sure that DoH is disabled in Firefox, on one of the computers on the grown-ups LAN, and are monitoring traffic on the <code>em1</code> interface with the usage of <a href="https://man.openbsd.org/tcpdump">tcpdump</a>. I have also enabled the log file on Unbound, just to avoid filling up syslog with too much DNS noise, and I am using <a href="https://man.openbsd.org/tail">tail</a> to monitor the log.</p>
 <p>I'll head over to "wikipedia.org" in the browser and then see what the surveillance on the router reveals.</p>
 <pre><code class="command"># tcpdump -n -i em1 src host 192.168.1.5 and not arp</code>
 <code>tcpdump: listening on em1, link-type EN10MB
