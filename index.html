@@ -92,7 +92,7 @@
         <ul>
             <li><a href="#inspecting-doh">Inspecting DNS over HTTPS (DoH)</a></li>
             <li><a href="#blocking-doh">Blocking DNS over HTTPS (DoH)</a></li>
-            <li><a href="#dhcp-domain">Adding the domain-name option to DHCP and using a FQDM</a></li>
+            <li><a href="#dhcp-domain">Adding the domain-name option to DHCP and using a FQDN</a></li>
             <li><a href="#recommended-reading">Recommended reading</a></li>
             <li><a href="#how-to-contribute">How to contribute to the guide?</a></li>
         </ul>
@@ -248,7 +248,7 @@ subnet 192.168.3.0 netmask 255.255.255.0 {
 <p>Then we just need to make sure we enable and start the <code>dhcpd</code> service:</p>
 <pre><code class="command"># rcctl enable dhcpd
 # rcctl start dhcpd</code></pre>
-<p class="info info-blue" style="font-size:initial;"><b>NOTE:</b><br>Take a look at the <a href="#dhcp-domain">Adding the domain-name option to DHCP and using a FQDM</a> in the appendix for information on how to easily add a <a href="https://en.wikipedia.org/wiki/Fully_qualified_domain_name">fully qualified domain name (FQDM)</a> to your setup and how you can use the <code>domain-name</code> option in DHCP to avoid having to type the FQDM each time you need it. The section will also show you how you can avoid having to remember IP addresses if your LAN has multiple computers or devices attached.</p>
+<p class="info info-blue" style="font-size:initial;"><b>NOTE:</b><br>Take a look at the <a href="#dhcp-domain">Adding the domain-name option to DHCP and using a FQDN</a> in the appendix for information on how to easily add a <a href="https://en.wikipedia.org/wiki/Fully_qualified_domain_name">fully qualified domain name (FQDN)</a> to your setup and how you can use the <code>domain-name</code> option in DHCP to avoid having to type the FQDN each time you need it. The section will also show you how you can avoid having to remember IP addresses if your LAN has multiple computers or devices attached.</p>
 
 <h2 id="a-packet-filtering-firewall">PF - A packet filtering firewall</h2>
 <p>A packet-filtering firewall examines each packet that crosses the firewall and decides whether to accept or deny individual packets, based on examining fields in the packet's IP and protocol headers, according to the set of rules that you specify.</p>
@@ -1132,10 +1132,10 @@ block in quick on { $g_lan $c_lan $p_lan } to &lt;block_doh&gt;
 <pre><code class="command"># pfctl -vvt block_doh -T show | awk '/\[/ {p+=$4; b+=$6} END {print p, b}'</code></pre>
 <p>As mentioned previously, this solution doesn't take unknown DoH servers into consideration. Also in order for the list to be effective, it needs to be kept up to date.</p>
 
-<h3 id="dhcp-domain">Adding the domain-name option to DHCP and using a FQDM</h3>
-<p>If we setup our network such that all computers and device have fixed IP addresses and hostnames, many tools will not work out-of-the-box with these hostnames without adding a domain name to the DNS server. This is because a networking tool like <code>host</code> expects the lookup to be a hostname on a <a href="https://en.wikipedia.org/wiki/Fully_qualified_domain_name">fully qualified domain name (FQDM)</a>.</p>
+<h3 id="dhcp-domain">Adding the domain-name option to DHCP and using a FQDN</h3>
+<p>If we setup our network such that all computers and device have fixed IP addresses and hostnames, many tools will not work out-of-the-box with these hostnames without adding a domain name to the DNS server. This is because a networking tool like <code>host</code> expects the lookup to be a hostname on a <a href="https://en.wikipedia.org/wiki/Fully_qualified_domain_name">fully qualified domain name (FQDN)</a>.</p>
 <p>Let's say that I have a computer setup on my LAN with the hostname "foo" and the fixed IP address 192.168.1.7. I may not remember that "foo" is the computer with that address, or I may not remember which host has the IP address 192.168.1.7 associated with it.</p>
-<p>With a FQDM we can do lookup like:</p>
+<p>With a FQDN we can do lookup like:</p>
 <pre><code class="command">$ host foo.example.com</code>
 <code>foo.example.com has address 192.168.1.7</code></pre>
 <p>And we can do:</p>
