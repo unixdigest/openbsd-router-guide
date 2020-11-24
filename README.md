@@ -11,4 +11,4 @@ You can also just use [email](https://www.unixsheikh.com/contact.html) :) I pref
 
 ## License
 
-OpenBSD Router Guide is released under the [BSD-3-Clause license](https://opensource.org/licenses/BSD-3-Clause).
+OpenBSD Router Guide is licensed under [Creative Commons Attribution 4.0 International License](https://creativecommons.org/licenses/by/4.0/).
