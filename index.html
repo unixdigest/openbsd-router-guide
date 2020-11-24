@@ -327,7 +327,7 @@ subnet 192.168.3.0 netmask 255.255.255.0 {
 <li>List items and range of addresses and ports
     <ul style="list-style-type:none;">
         <li><p>When you need to specify multiple items, e.g. multiple port numbers, you can separate them with a whitespace or a comma. Like this <code>port { 53 853 }</code> or like this <code>port { 53, 853 }</code></p>
-        <p>Ranges of addresses are specified using the <<code>-</code> operator. E.g. <code>192.168.1.2 - 192.168.1.10</code> means all IP addresses from 192.168.1.2 until 192.168.1.10, both included.</p>
+        <p>Ranges of addresses are specified using the <code>-</code> operator. e.g. <code>192.168.1.2 - 192.168.1.10</code> means all IP addresses from 192.168.1.2 until 192.168.1.10, both included.</p>
         <p>Range of ports has multiple parameters, look at the man page for <a href="https://man.openbsd.org/pf.conf">pf.conf</a> and search for the text <q>Ports and ranges of ports are specified using these operators</q>.</p>
         </li>
     </ul>
