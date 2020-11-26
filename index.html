@@ -1074,17 +1074,17 @@ Nov 05 23:30:34 unbound[12636:0] reply: 192.168.1.5 www.wikipedia.org. A IN NOER
 ...
 </code></pre>
 <p>Naturally we're seeing the query both on the interface traffic as well as in the Unbound log.</p>
-<p>I have then enabled DoH and disabled regular DNS in firefox, by setting the value of <code>network.trr.mode</code> to <code>4</code>. I have then changed the <code>Network settings</code> and set Cloudflare as the DoH provider.</p>
+<p>I have then enabled DoH and disabled regular DNS in Firefox, by setting the value of <code>network.trr.mode</code> to <code>4</code>. I have then changed the <code>Network settings</code> and set Cloudflare as the DoH provider.</p>
 <p class="info info-green" style="font-size:initial;"><b>TIP:</b><br>
 If you just enable DoH in Firefox via the preferences pane, Firefox will still use regular DNS as a fallback. In order to force Firefox to only use DoH you can set the value of <code>network.trr.mode</code>.
-<br><br>Type <code>about:config</code> in the URL bar and press <code>Enter</code> to access Firefox's hidden configuration panel.
+<br><br>Type <code>about:config</code> in the URL bar and press <kbd>Enter</kbd> to access Firefox's hidden configuration panel.
 <br><br>Step 2: Look for the setting <code>network.trr.mode</code>. This controls DoH support. This setting supports four values:
 <br><br><b>1</b> - DoH is disabled.
 <br><b>2</b> - DoH is enabled, but Firefox uses both DoH and regular DNS based on which returns faster query responses
 <br><b>3</b> - DoH is enabled, and regular DNS works as a backup
 <br><b>4</b> - DoH is enabled, and regular DNS is disabled
 <br><b>5</b> - DoH is disabled
-<br><br>Step 3: Look for the setting <code>network.trr.bootstrapAddress</code>. This controls the numerical IP address for your DoH server. Input the value of <code>1.1.1.1</code> into the field and press <code>Enter</code>.</p>
+<br><br>Step 3: Look for the setting <code>network.trr.bootstrapAddress</code>. This controls the numerical IP address for your DoH server. Input the value of <code>1.1.1.1</code> into the field and press <kbd>Enter</kbd>.</p>
 <p>This time I'll visit "freebsd.org".</p>
 <pre><code class="command"># tcpdump -n -i em1 src 192.168.1.5 and not arp</code>
 <code>tcpdump: listening on em1, link-type EN10MB
