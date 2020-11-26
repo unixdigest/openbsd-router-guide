@@ -750,7 +750,7 @@ wikipedia.org.  600     IN      A       91.198.174.192
 <p>We can also use <code>drill</code>. The relevant information from the output of <code>drill</code> is the <code>rcode</code> field in the "HEADER" section:</p>
 <pre><code class="command">$ drill a1b7c3n9m3b0.com
 ;; -&gt;&gt;HEADER&lt;&lt;- opcode: QUERY, <b>rcode: NXDOMAIN</b>, id: 39710
-...
+…
 </code></pre>
 <p>Or if you prefer <code>dig</code>, then the relevant information is located in the <code>status</code> field in the "HEADER" section:</p>
 <pre><code class="command">$ dig a1b7c3n9m3b0.com
@@ -759,7 +759,7 @@ wikipedia.org.  600     IN      A       91.198.174.192
 ;; global options: +cmd
 ;; Got answer:
 ;; -&gt;&gt;HEADER&lt;&lt;- opcode: QUERY, <b>status: NXDOMAIN</b>, id: 48858
-...
+…
 </code></pre>
 <p>Using the NXDOMAIN reply is not only the correct way to block a domain, according to <a href="https://tools.ietf.org/html/rfc8020">RFC 8020</a>, but it is also the best way since a redirect to an IP address like 127.0.0.1 or 0.0.0.0 will simply make the client that initiated the DNS query talk to itself.</p>
 <p>It may be that the browser will reply with something like: <code>Firefox can't establish a connection to the server at 0.0.0.0.</code>. However, because the IP address 0.0.0.0 simply translates to our local machine, we're still able to ping that address as it is synonymous to pinging 127.0.0.1:</p>
@@ -872,14 +872,14 @@ log-time-ascii: yes
 <p>You can list the settings Unbound is started with by running the following command (this goes for any service running on OpenBSD):</p>
 <pre><code class="command"># rcctl get unbound</code></pre>
 <p>If you want to get some statistical data, you can run:</p>
-<pre><code class="command"># # unbound-control stats_noreset</code>
+<pre><code class="command"># unbound-control stats_noreset</code>
 <code>thread0.num.queries=2056
 thread0.num.queries_ip_ratelimited=0
 thread0.num.cachehits=678
 thread0.num.cachemiss=1378
 thread0.num.prefetch=15
 thread0.num.expired=0
-...
+…
 </code></pre>
 <p>You can also get a dump of the cache:</p>
 <pre><code class="command"># unbound-control dump_cache|less</code></pre>
@@ -906,12 +906,12 @@ thread0.num.expired=0
 <p>You can now test our DNS blocking by querying one of the blocked domains from the list:</p>
 <pre><code class="command">$ drill 3lift.com</code>
 <code>;; -&gt;&gt;HEADER&lt;&lt;- opcode: QUERY, <b>rcode: NXDOMAIN</b>, id: 55906
-...
+…
 </code></pre>
 <p>Then try the same with Cloudflares DNS server:</p>
 <pre><code class="command">$ drill 3lift.com @1.1.1.1</code>
 <code>;; -&gt;&gt;HEADER&lt;&lt;- opcode: QUERY, <b>rcode: NOERROR</b>, id: 48771
-...
+…
 </code></pre>
 <p>As we can see from the queries, our DNS server blocks access to the domain 3lift.com by replying with a NXDOMAIN, while Cloudflares DNS server replies with the correct IP address.</p>
 
@@ -1044,7 +1044,7 @@ Address: 2620:0:862:ed1a::1
 
 <h3 id="dns-spoofing">DNS spoofing</h3>
 <p>DNS spoofing, also referred to as DNS cache poisoning, is something different from DNS hijacking. While the traffic gets redirected from one destination to another in a DNS hijacking attack, it is the data itself that gets manipulated in a DNS spoofing attack. Often the two attack strategies are combined.</p>
-<p>In a DNS spoofing attach, manipulated data is introduced into the DNS resolver's cache, causing the name server to return an incorrect result, e.g. a wrong IP address.</p>
+<p>In a DNS spoofing attack, manipulated data is introduced into the DNS resolver's cache, causing the name server to return an incorrect result, e.g. a wrong IP address.</p>
 
 <h4 id="dns-spoofing-prevention">DNS spoofing prevention</h4>
 <p>This kind of attack can be mitigated at the transport layer or application layer by performing end-to-end validation once a connection is established. A common example of this is the use of Transport Layer Security (TLS) and digital signatures.</p>
@@ -1062,7 +1062,7 @@ Address: 2620:0:862:ed1a::1
 23:30:33.494352 192.168.1.5.55724 &gt; 192.168.1.1.53: 58136+ A? wikipedia.org.(31) (DF)
 23:30:33.774439 192.168.1.5.58372 &gt; 192.168.1.1.53: 58448+ A? www.wikipedia.org.(35) (DF)
 23:30:34.184287 192.168.1.5.46639 &gt; 192.168.1.1.53: 15167+ A? www.wikipedia.org.(35) (DF)
-...
+…
 </code></pre>
 <pre><code class="command"># tail -f /var/unbound/log/unbound.log</code>
 <code>Nov 05 23:30:33 unbound[12636:0] query: 192.168.1.5 wikipedia.org. A IN
@@ -1071,7 +1071,7 @@ Nov 05 23:30:33 unbound[12636:0] query: 192.168.1.5 www.wikipedia.org. A IN
 Nov 05 23:30:33 unbound[12636:0] reply: 192.168.1.5 www.wikipedia.org. A IN NOERROR 0.154989 0 80
 Nov 05 23:30:34 unbound[12636:0] query: 192.168.1.5 www.wikipedia.org. A IN
 Nov 05 23:30:34 unbound[12636:0] reply: 192.168.1.5 www.wikipedia.org. A IN NOERROR 0.000000 1 80
-...
+…
 </code></pre>
 <p>Naturally we're seeing the query both on the interface traffic as well as in the Unbound log.</p>
 <p>I have then enabled DoH and disabled regular DNS in firefox, by setting the value of <code>network.trr.mode</code> to <code>4</code>. I have then changed the <code>Network settings</code> and set Cloudflare as the DoH provider.</p>
@@ -1091,7 +1091,7 @@ If you just enable DoH in Firefox via the preferences pane, Firefox will still u
 00:21:10.944243 192.168.1.5.32856 &gt; 1.1.1.1.443: P 2223446146:2223446202(56) ack 157857007 win 501 (DF)
 00:21:10.948719 192.168.1.5.46584 &gt; 96.47.72.84.80: S 922508523:922508523(0) win 64240 &lt;mss 1460,sackOK,timestamp 1673624773 0,nop,wscale 7&gt; (DF)
 00:21:11.133801 192.168.1.5.33298 &gt; 96.47.72.84.443: S 3275123911:3275123911(0) win 64240 &lt;mss 1460,sackOK,timestamp 1673624958 0,nop,wscale 7&gt; (DF)
-...
+…
 </code></pre>
 <pre><code class="command"># tail -f /var/unbound/log/unbound.log</code>
 <code>Nov 05 23:30:33 unbound[12636:0] query: 192.168.1.5 wikipedia.org. A IN
@@ -1100,7 +1100,7 @@ Nov 05 23:30:33 unbound[12636:0] query: 192.168.1.5 www.wikipedia.org. A IN
 Nov 05 23:30:33 unbound[12636:0] reply: 192.168.1.5 www.wikipedia.org. A IN NOERROR 0.154989 0 80
 Nov 05 23:30:34 unbound[12636:0] query: 192.168.1.5 www.wikipedia.org. A IN
 Nov 05 23:30:34 unbound[12636:0] reply: 192.168.1.5 www.wikipedia.org. A IN NOERROR 0.000000 1 80
-...
+…
 </code></pre>
 <p>This reveals, from the monitoring of the network interface, that a connection was made to Cloudflares DNS server on 1.1.1.1 on port 443 (HTTPS) and that we visited the IP destination address 96.47.72.84 right after. At the same time nothing has happened in the Unbound log, <code>tail</code> still just shows the previous query.</p>
 <p>If we do a regular DNS query on the router we can verify that the IP address 96.47.72.84 is indeed the IP address for "freebsd.org".</p>
