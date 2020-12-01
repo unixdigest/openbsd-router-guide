@@ -206,7 +206,7 @@ em2: flags=8843&lt;UP,BROADCAST,RUNNING,SIMPLEX,MULTICAST&gt; mtu 1500
 <p>Then I need to setup the IP of the ISP gateway. Depending on the setup of your ISP this might be another IP address than the one from the ISP modem or router. If you don't add the <code>/etc/mygate</code> then no default gateway is added to the <a href="https://en.wikipedia.org/wiki/Routing_table">routing table</a>. You don't need the <code>/etc/mygate</code> if you get your IP from your ISP modem or router via DHCP. If you use the <code>dhcp</code> directive in any <code>hostname.ifX</code> then the entries in <code>/etc/mygate</code> will be ignored. This is because the card that get its IP address from a DHCP server will also get gateway routing information supplied.</p>
 <p>Last, but not least, we need to enable IP forwarding. IP forwarding is the process that enables IP packets to travel between network interfaces on the router. By default OpenBSD will not forward IP packets between various network interfaces. In other words, routing functions (also known as gateway functions) are disabled.</p>
 <p>We can enable IP forwarding using the following commands:</p>
-<pre><code class="command"> # sysctl net.inet.ip.forwarding=1
+<pre><code class="command"># sysctl net.inet.ip.forwarding=1
 # echo 'net.inet.ip.forwarding=1' &gt;&gt; /etc/sysctl.conf</code></pre>
 <p>Now OpenBSD will be able to forward IPv4 packets from one NIC to another. Or, as in our specific case with the four port NIC, from one port to another. Take a look at the man page if you need IPv6.</p>
 
