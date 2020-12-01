@@ -1,6 +1,6 @@
 # OpenBSD Router Guide
 
-This is the public Codeberg repository for the [OpenBSD router guide](https://unixsheikh.com/tutorials/openbsd-router-guide/).
+This is the public Codeberg repository for the [OpenBSD router guide](https://openbsdrouterguide.net/).
 
 ## How to Contribute
 
