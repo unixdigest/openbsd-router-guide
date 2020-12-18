@@ -17,7 +17,7 @@
         <td>
             <h1 class="title">OpenBSD Router Guide</h1>
             <h4>Network segmenting firewall, DHCP, DNS with Unbound, domain blocking and much more<br>
-                <span style="font-size:x-small;font-weight:initial;">OpenBSD: 6.8 · Published: 2020-11-05 · Updated: 2020-12-12 · Version: 1.4.5</span>
+                <span style="font-size:x-small;font-weight:initial;">OpenBSD: 6.8 · Published: 2020-11-05 · Updated: 2020-12-18 · Version: 1.5.0</span>
             </h4>
         </td>
     </tr>
@@ -396,7 +396,6 @@ block drop in log on $ext_if
 match in on $ext_if inet proto icmp icmp-type {echoreq } tag ICMP_IN
 block drop in on $ext_if proto icmp
 pass in proto icmp tagged ICMP_IN max-pkt-rate 100/10
-pass in on $ext_if inet proto icmp icmp-type { 3 code 4, 11 code 0}
 
 # Default allow all NICs to pass out data through the Ethernet port.
 pass out inet
