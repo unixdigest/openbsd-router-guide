@@ -430,7 +430,7 @@ block drop in quick inet from 192.168.3.1 to any<br>
     <li>Poor performance because of blocking ICMP redirect. ICMP redirect is used by a router to inform a host of a direct path from the source host to a destination host. This reduces the amount of hops data has to travel through to reach the destination. With ICMP blocked, the host will not be aware of the most optimal route to the destination.</li>
 </ul>
 <p>In the above setup we allow ICMP, but put a "rate limit" on the number of ping requests the router will answer. With the <code>max-pkt-rate 100/10</code> modifier the router will stop responding to pings if we get a more than a 100 pings in 10 seconds.</p>
-<p>Should you still want to completely block ICMP for some reason, simply remove the 4 rules after the "Allow ICMP" comment.</p>
+<p>Should you still want to completely block ICMP for some reason, simply remove the 3 rules after the "Allow ICMP" comment.</p>
 <p>Now we get to the LAN segment for the grown-ups in the house.</p>
 <pre><code>#---------------------------------#
 # Grown-ups LAN Setup
