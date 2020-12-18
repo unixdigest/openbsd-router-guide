@@ -17,7 +17,7 @@
         <td>
             <h1 class="title">OpenBSD Router Guide</h1>
             <h4>Network segmenting firewall, DHCP, DNS with Unbound, domain blocking and much more<br>
-                <span style="font-size:x-small;font-weight:initial;">OpenBSD: 6.8 · Published: 2020-11-05 · Updated: 2020-12-18 · Version: 1.5.0</span>
+                <span style="font-size:x-small;font-weight:initial;">OpenBSD: 6.8 · Published: 2020-11-05 · Updated: 2020-12-18 · Version: 1.6.0</span>
             </h4>
         </td>
     </tr>
@@ -310,7 +310,7 @@ subnet 192.168.3.0 netmask 255.255.255.0 {
 <li><code>from</code> and <code>to</code>
     <ul style="list-style-type:none;">
         <li><p>The <code>from</code> and <code>to</code> rule modifiers apply <b>only to packets with the specified source and destination addresses and ports</b>. Both the hostname or IP address, port, and OS specifications are optional.</p>
-        <p>When we're dealing with a router with multiple NICs it's easy to think like this: <i>I want to pass in packets from the external interface (the NIC attached to the Internet) and then have them go to the first LAN interface and from there out to a specific PC on that LAN</i>, meaning we follow the "trail of data" in our minds, and then write that out into something like this: <code>pass in on $ext_if from $ext_if to $p_lan port 80</code>. But this will not make the HTTP traffic "magically" appear on port 80 on the LAN with a PC attached with a specific IP address. We would also require a specific <code>pass out</code> rule and furthermore need to determine exactly on which machine we want the data to end up. Unless you are really dealing with a very specific requirement, you never need such rules in your ruleset! The <code>antispoof</code> and <code>scrub</code> features of PF will protect your internal network very well and with a basic setup of correct network address translation (NAT), with the <code>nat-to</code> option, and redirection with the <code>rdr-to</code> option, PF will handle the packages from the inside to the outside and vice versa.</p>
+        <p>When we're dealing with a router with multiple NICs it's easy to think like this: <i>I want to pass in packets from the external interface (the NIC attached to the Internet) and then have them go to the first LAN interface and from there out to a specific PC on that LAN</i>, meaning we follow the "trail of data" in our minds, and then write that out into something like this: <code>pass in on $ext_if from $ext_if to $p_lan port 80</code>. But this will not make the HTTP traffic "magically" appear on port 80 on the LAN with a PC attached with a specific IP address. We would also require a specific <code>pass out</code> rule and furthermore need to determine exactly on which machine we want the data to end up. Unless you are really dealing with a very specific requirement, you never need such rules in your ruleset! The <a href="https://www.openbsd.org/faq/pf/filter.html#urpf">Unicast Reverse Path Forwarding (uRPF)</a> features of PF will protect your internal network very well and with a basic setup of correct network address translation (NAT), with the <code>nat-to</code> option, and redirection with the <code>rdr-to</code> option, PF will handle the packages from the inside to the outside and vice versa.</p>
         <p>The <code>all</code> parameter is equivalent to writing <code>from any to any</code>. <b>Without explicitly declaring the direction, the default is</b> <code>from any to any</code>. This rule: <code>pass in on $p_lan proto udp to port dns</code> translates into this: <code>pass in on em3 inet proto udp from any to any port = 53</code></p>
         <p>There is also no need to use <code>to any port dns</code>, the <code>any</code> part is the default. You do however need the <code>to port dns</code></p></li>
     </ul>
@@ -373,10 +373,8 @@ table &lt;martians&gt; { 0.0.0.0/8 10.0.0.0/8 127.0.0.0/8 169.254.0.0/16     \
 # Protect and block by default
 #---------------------------------#
 set skip on lo0
-match in all scrub (max-mss 1440)
 
 # Spoofing protection for all interfaces.
-antispoof quick for { $g_lan $c_lan $p_lan }
 block in from no-route
 block in quick from urpf-failed
 
@@ -400,8 +398,18 @@ pass in proto icmp tagged ICMP_IN max-pkt-rate 100/10
 # Default allow all NICs to pass out data through the Ethernet port.
 pass out inet
 </code></pre>
-<p><a href="https://man.openbsd.org/pf.conf#Scrub">scrub</a> enables a "clean up" of packet content, causing fragmented packets to be assembled. <code>scrub</code> also provides some protection against some kinds of attacks based on incorrect handling of packet fragments.</p>
-<p>The <a href="https://man.openbsd.org/pf.conf#Blocking_Spoofed_Traffic">antispoof</a> modifier is a very important protection. Spoofing is when someone fakes an IP address. The <code>antispoof</code> modifier expands to a set of filter rules that will block all traffic with a source IP from the network, directly connected to the specified interface, from entering the system through any other interface. This is sometimes referred to as "bleeding over" or "bleeding through".</p>
+<p>In previous versions of this guide (before version 1.5.0) I used to have the <a href="https://man.openbsd.org/pf.conf#Scrub">scrub</a> statement present in the setup above, however after having consulted with <a href="http://henningbrauer.com/">Henning Brauer</a> from the OpenBSD team (thanks Henning!) and doing some further research, I have decided to remove it as it deals with very specific corner cases (please see the documentation). You only need the <code>scrub</code> rule if a host on your network generates fragmented packets with the "dont‑fragment" flag set. The default PF behavior without the <code>scrub</code> rule is better suited for general usage.</p>
+<p>The OpenBSD <a href="https://www.openbsd.org/faq/pf/example1.html">FAQ</a> contains an example setup for a very basic router, with some specific values for <code>scrub</code>, but my recommendation is to only use <code>scrub</code> when you know for a fact that you need it. If you do need it, insert it into the configuration after the <code>set skip</code> rule for the loopback interface, like this:</p>
+<pre><code>set skip on lo0
+match in all scrub
+</code></pre>
+<p>Then add whatever parameters to the <code>scrub</code> rule you need.</p>
+<p>I also used to have the following <a href="https://man.openbsd.org/pf.conf#Blocking_Spoofed_Traffic">antispoof</a> rule present in the spoofing protection section:</p>
+<pre><code>antispoof quick for { $g_lan $c_lan $p_lan }
+</code></pre>
+<p>I have since removed the <code>antispoof</code> rule since the <a href="https://www.openbsd.org/faq/pf/filter.html#urpf">Unicast Reverse Path Forwarding (uRPF)</a> feature of PF provides the same functionality as <a href="https://www.openbsd.org/faq/pf/filter.html#antispoof">antispoof</a> rules, and as such we don't need it any longer, instead we just use the <code>block in quick from urpf-failed</code> rule.</p>
+<p>The following information about the <code>antispoof</code> modifier is kept for educational purposes.</p>
+<p>Spoofing is when someone fakes an IP address and the <code>antispoof</code> modifier expands to a set of filter rules that will block all traffic with a source IP from the network, directly connected to the specified interface, from entering the system through any other interface. This is sometimes referred to as "bleeding over" or "bleeding through".</p>
 <p>The above <code>antispoof</code> directive is translated by PF into the following:</p>
 <p>block drop in quick on ! em1 inet from 192.168.1.0/24 to any<br>
 block drop in quick inet from 192.168.1.1 to any<br>
@@ -412,6 +420,7 @@ block drop in quick inet from 192.168.3.1 to any<br>
 </p>
 <p>If we take, e.g., the <code>em1</code> NIC rule <code>block drop in quick on ! em1 inet from 192.168.1.0/24 to any</code> then that means: <i>block any traffic from the network with IP addresses ranging from 192.168.1.1 to 192.168.1.255, that doesn't originate from the em1 interface itself, and that is going anywhere</i>. Since the <code>em1</code> interface is the NIC in charge of all IP addresses in that specific range, then no traffic with such an IP address should originate from any other NIC.</p>
 <p class="info info-red" style="font-size:initial;"><b>WARNING:</b><br>Usage of <code>antispoof</code> should be <b>restricted</b> to interfaces that have been assigned an IP address, meaning that if you have unused NICs, or ports on a NIC, make sure to assign an IP address to each or don't include these in the <code>antispoof</code> option.</p>
+<p>As mentioned, I have removed the <code>antispoof</code> rule and we are instead using a strict uRPF check. When a packet is run through the uRPF check, the source IP address of the packet is looked up in the routing table. If the outbound interface is found in the routing table and the entry is the same as the interface that the packet just came in on, then the uRPF check passes. Otherwise it's possible that the packet has had its source address spoofed and it is blocked.</p>
 <p>The IP addresses in the <code>martians</code> macro constitutes the <a href="https://tools.ietf.org/html/rfc1918">RFC1918</a> addresses which are not to be used on the Internet. Traffic to and from such addresses is dropped on the routers external interface.</p>
 <p>We are allowing <a href="https://en.wikipedia.org/wiki/Internet_Control_Message_Protocol">ICMP</a> in our setup, even though some network administrators completely block ICMP. People mainly block ICMP completely because of unwarranted actions such as network discovery attacks, covert communication channels, <a href="https://en.wikipedia.org/wiki/Ping_sweep">ping sweep</a>, <a href="https://en.wikipedia.org/wiki/Ping_flood">ping flood</a>, <a href="https://en.wikipedia.org/wiki/ICMP_tunnel">ICMP tunneling</a> and <a href="https://en.wikipedia.org/wiki/ICMP_Redirect_Message#Redirect">ICMP redirecting</a>. However, ICMP is much more than answering pings. If we block ICMP completely, diagnostics, reliability, and network performance may suffer as a result because important mechanisms are disabled when the ICMP protocol is restricted.</p>
 <p>Some of the reasons why ICMP shouldn't be blocked:</p>
