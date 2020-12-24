@@ -1,0 +1,64 @@
+/* unixsheikh.com style sheet v2.2.0
+ * Licensed under Creative Commons Attribution 4.0 International License
+ * https://creativecommons.org/licenses/by/4.0/
+ */
+@charset "utf-8";
+html {font-size: min(max(1rem, 4vw), 16px);}
+body {color:#000000;font-family:monospace,"Courier New",Courier;padding:1em;margin:auto;max-width:72em;background:#fefefe;}
+.info {padding:.45rem 1rem;border:1px solid transparent;border-radius:.25rem;font-size:smaller;}
+.info-blue {color:#004085;background-color:#cce5ff;border-color:#b8daff;}
+.info-blue hr {border-top-color:#9fcdff;}
+.info-blue .info-link {color:#002752;}
+.info-green {color:#155724;background-color:#d4edda;border-color:#c3e6cb;}
+.info-green hr {border-top-color:#b1dfbb;}
+.info-green .info-link {color:#0b2e13;}
+.info-mint {color:#0c5460;background-color:#d1ecf1;border-color:#bee5eb;}
+.info-mint hr {border-top-color:#abdde5;}
+.info-mint .info-link {color:#062c33;}
+.info-yellow {color:#59402D;background-color:#fff3cd;border-color:#c9ba9b;}
+.info-yellow hr {border-top-color:#ffe8a1;}
+.info-yellow .info-link {color:#533f03;}
+.info-red {color:#721c24;background-color:#f8d7da;border-color:#f5c6cb;}
+.info-red hr {border-top-color:#f1b0b7;}
+.info-red .info-link {color:#491217;}
+.info-grey {color:#555555;background-color:#e2e3e5;border-color:#d6d8db;}
+.info-grey hr {border-top-color:#c8cbcf;}
+.info-grey .info-link {color:#202326;}
+.index-intro {font-size:smaller; color:#828282;}
+.index-outdated {padding:0 3px;border:1px solid transparent;color:#721c24;background-color:#f8d7da;border-color:#f5c6cb;}
+.date {font-size:x-small; color:#828282;}
+.arrow {color:#ff8c00;}
+.content-comment {margin:30px 0;}
+.post-data {font-size:x-small;padding:10px 0;color:#333333;}
+.abstract {padding:14px;white-space:pre-wrap;word-wrap:break-word;border:2px solid #c9ba9b;border-radius:6px;font-size:initial;}
+a:visited {color:#828282;}
+nav {margin-bottom:20px;}
+nav a:hover {text-decoration:underline;}
+code {font-family:"Liberation Mono","Courier New",Courier;color:darkgreen;font-weight:bold;}
+pre {white-space:pre-wrap;word-wrap:break-word;background-color:#eeeeee;border:2px solid #f0ad4e;border-radius:6px;font-size:smaller;padding:14px;}
+pre code {color:#222222;font-weight:normal;}
+pre.no-style {line-height:normal;background-color:#ffffff;border:0px;}
+.command {font-weight:bold;}
+a {color:#1168cc;text-decoration:none;}
+q {font-style:italic;}
+img {max-width:100%;border:0;-ms-interpolation-mode:bicubic;vertical-align:middle;}
+iframe {border:1px solid #aaaaaa;}
+.youtube-video-container {position:relative;overflow:hidden;width:100%;}
+.youtube-video-container::after {display: block;content:"";padding-top:56.25%;}
+.youtube-video-container iframe {position:absolute;top:0;left:0;width:100%;height:100%;}
+blockquote {color:#333333;margin:0;padding-left:3em;border-left:0.5em #eeeeee solid; font-size:smaller;}
+hr {border:none;height:2px;color:#ffb300;background-color:#ffb300;}
+table.index {border-spacing:0px;}
+table.index td.date {margin:0;padding-left:20px;padding-bottom:5px;line-height:7px;}
+table.oddeven {font-size:smaller;border-spacing:0px;border:1px solid #cccccc;width:100%;max-width:100%;margin-bottom:15px;background-color:transparent;text-align:left;}
+table.oddeven th {font-weight:bold;border:1px solid #cccccc;padding:8px;}
+table.oddeven td {border:1px solid #cccccc;padding:8px;}
+table.oddeven tr {background-color:transparent;}
+/* Odd row color */
+table.oddeven tr:nth-of-type(2n+1) {background-color:#eeeeee;}
+table.oddeven tr th {background-color:#dddddd;}
+/* Hover Effect */
+table.oddeven tr {-moz-transition:background-color 300ms ease-in-out 0s;-ms-transition:background-color 300ms ease-in-out 0s;-o-transition:background-color 300ms ease-in-out 0s;-webkit-transition:background-color 300ms ease-in-out 0s;transition:background-color 300ms ease-in-out 0s;}
+table.oddeven tr:hover {background-color:#ffb90f;}
+table.oddeven tr {border-top:1px solid #cccccc;border-bottom:1px solid #cccccc;}
+table.oddeven th, table.oddeven td {border:none;}
