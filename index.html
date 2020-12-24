@@ -896,7 +896,7 @@ thread0.num.expired=0
 
 <h3 id="lets-block-some-domains">Let's block some domains!</h3>
 <p>Now we get to the interesting part about domain blocking.</p>
-<p>I have created a simple shell script called <a href="https://codeberg.org/unixsheikh/dnsblockbuster">DNSBlockBuster</a> that automatically downloads a set of hosts files from various online sources, concatenates them into one, does some cleanup, and then convert the result into a domain block list for both Unbound and dnsmasq. It mainly blocks ads, porn sites and tracking.</p>
+<p>I have created a simple shell script called <a href="https://github.com/unixsheikh/dnsblockbuster">DNSBlockBuster</a> that automatically downloads a set of hosts files from various online sources, concatenates them into one, does some cleanup, and then convert the result into a domain block list for both Unbound and dnsmasq. It mainly blocks ads, porn sites and tracking.</p>
 <p>With DNSBlockBuster you have the option to create a whitelist, should any of the domains listed in the hosts files be a false positive for you, and you can add your own blacklist in case you want to manually block some domains that aren't listed in the hosts files. You can also easily add new block lists or remove any of the provided block lists.</p>
 <p>You don't need to use my script of course, but I will use the script in this tutorial.</p>
 <p>Currently the script creates a huge domain list with almost two million domains listed and Unbound takes up about 705MB of memory in total when the entire block list is loaded.</p>
@@ -904,7 +904,7 @@ thread0.num.expired=0
 <pre><code>unbound_timeout=240</code></pre>
 <p>Then restart Unbound:</p>
 <pre><code class="command"># rcctl restart unbound</code></pre>
-<p>Take a look at the <a href="https://codeberg.org/unixsheikh/dnsblockbuster#user-content-usage">Usage</a> section in the documentation for DNSBlockBuster on how to use it. It's easy and simple.</p>
+<p>Take a look at the <a href="https://github.com/unixsheikh/dnsblockbuster#user-content-usage">Usage</a> section in the documentation for DNSBlockBuster on how to use it. It's easy and simple.</p>
 <p>Once you have created your block list for Unbound place it in <code>/var/unbound/etc/</code>, then edit the Unbound configuration file <code>/var/unbound/etc/unbound.conf</code> and insert the following somewhere:</p>
 <pre><code>include: "/var/unbound/etc/unbound-blocked-hosts.conf"</code></pre>
 <p>Now reload Unbound with:</p>
@@ -1115,11 +1115,11 @@ Nov 05 23:30:34 unbound[12636:0] reply: 192.168.1.5 www.wikipedia.org. A IN NOER
 <p>This demonstrates that even though DoH bypasses the regular DNS query, it is not able to hide the destination IP address that is still present in clear text in the communications traffic.</p>
 
 <h3 id="blocking-doh">Blocking DNS over HTTPS (DoH)</h3>
-<p>Previously the <a href="https://codeberg.org/unixsheikh/dnsblockbuster">DNSBlockBuster</a> script already had some DoH domain names in the list, that I had randomly thrown in, but I have since removed DoH blocking from the DNS server as it really needs happen on the firewall level only.</p>
+<p>Previously the <a href="https://github.com/unixsheikh/dnsblockbuster">DNSBlockBuster</a> script already had some DoH domain names in the list, that I had randomly thrown in, but I have since removed DoH blocking from the DNS server as it really needs happen on the firewall level only.</p>
 <p>Blocking DoH via domain names doesn't make much sense in my humble opinion as a domain name has to be looked up in the first place. Most clients that use DoH has the host IP address for the DoH server encoded directly into the source code.</p>
-<p>I have searched multiple sites on the Internet, but haven't found a single up to date list of public DoH servers, so I have decided to make my own list called <a href="https://codeberg.org/unixsheikh/dohblockbuster">DoHBlockBuster</a>. However, this is a tremendous task, something which I know I wont have time to keep updated in the future unless others pitch in, so if you have got some spare time, please help keep the lists updated (either make a pull request or send me an email). Also this list is in no way exhaustive.</p>
+<p>I have searched multiple sites on the Internet, but haven't found a single up to date list of public DoH servers, so I have decided to make my own list called <a href="https://github.com/unixsheikh/dohblockbuster">DoHBlockBuster</a>. However, this is a tremendous task, something which I know I wont have time to keep updated in the future unless others pitch in, so if you have got some spare time, please help keep the lists updated (either make a pull request or send me an email). Also this list is in no way exhaustive.</p>
 <p>If you don't use IPv6 you can block all outgoing IPv6 traffic and then only use the IPv4 list from DoHBlockBuster. Change the <code>pass out</code> parameter, in the "Default protect and block" section of <code>/etc/pf.conf</code>, to <code>pass out inet</code>. That way you only allow outgoing IPv4 traffic and don't need to specifically block IPv6 DoH IP addresses.</p>
-<p>Download the lists from <a href="https://codeberg.org/unixsheikh/dohblockbuster">DoHBlockBuster</a> and edit the lists to suit your needs and put them somewhere on disk.</p>
+<p>Download the lists from <a href="https://github.com/unixsheikh/dohblockbuster">DoHBlockBuster</a> and edit the lists to suit your needs and put them somewhere on disk.</p>
 <p>I have made a subdirectory <code>/etc/pf-block-lists</code> where I place all IP block lists I need for PF.</p>
 <p>Then create a persistent file for PF in the "Tables" section of <code>/etc/pf.conf</code>:</p>
 <pre><code># Public DoH servers.
@@ -1217,7 +1217,7 @@ nameserver 192.168.1.1
 <h3 id="how-to-contribute">How to contribute to the guide?</h3>
 <p>Please consider contributing if you have any comments, corrections, or changes you consider appropriate.</p>
 <ul>
-    <li>Clone on <a href="https://codeberg.org/unixsheikh/openbsd-router-manual">Codeberg</a></li>
+    <li>Clone on <a href="https://github.com/unixsheikh/openbsd-router-manual">Codeberg</a></li>
     <li>Submit a pull request for consideration</li>
 </ul>
 <p>You can also just use <a href="https://www.unixsheikh.com/contact.html">email</a> :)</p>

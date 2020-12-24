@@ -1,6 +1,6 @@
 # OpenBSD Router Guide
 
-This is the public Codeberg repository for the [OpenBSD router guide](https://openbsdrouterguide.net/).
+This is the public GitHub repository for the [OpenBSD router guide](https://openbsdrouterguide.net/).
 
 ## How to Contribute
 
