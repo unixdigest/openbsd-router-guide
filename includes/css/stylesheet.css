@@ -1,11 +1,10 @@
-/* unixsheikh.com style sheet v2.2.0
+/* unixsheikh.com style sheet v2.2.3
  * Licensed under Creative Commons Attribution 4.0 International License
  * https://creativecommons.org/licenses/by/4.0/
  */
 @charset "utf-8";
-html {font-size: min(max(1rem, 4vw), 16px);}
 body {color:#000000;font-family:monospace,"Courier New",Courier;padding:1em;margin:auto;max-width:72em;background:#fefefe;}
-.info {padding:.45rem 1rem;border:1px solid transparent;border-radius:.25rem;font-size:smaller;}
+.info {padding:.45rem 1rem;border:1px solid transparent;border-radius:.25rem;}
 .info-blue {color:#004085;background-color:#cce5ff;border-color:#b8daff;}
 .info-blue hr {border-top-color:#9fcdff;}
 .info-blue .info-link {color:#002752;}
@@ -24,18 +23,17 @@ body {color:#000000;font-family:monospace,"Courier New",Courier;padding:1em;marg
 .info-grey {color:#555555;background-color:#e2e3e5;border-color:#d6d8db;}
 .info-grey hr {border-top-color:#c8cbcf;}
 .info-grey .info-link {color:#202326;}
-.index-intro {font-size:smaller; color:#828282;}
+.index-intro {color:#828282;}
 .index-outdated {padding:0 3px;border:1px solid transparent;color:#721c24;background-color:#f8d7da;border-color:#f5c6cb;}
-.date {font-size:x-small; color:#828282;}
 .arrow {color:#ff8c00;}
 .content-comment {margin:30px 0;}
 .post-data {font-size:x-small;padding:10px 0;color:#333333;}
-.abstract {padding:14px;white-space:pre-wrap;word-wrap:break-word;border:2px solid #c9ba9b;border-radius:6px;font-size:initial;}
+.abstract {padding:14px;white-space:pre-wrap;word-wrap:break-word;border:1px solid #c9ba9b;border-radius:6px;font-size:initial;}
 a:visited {color:#828282;}
 nav {margin-bottom:20px;}
 nav a:hover {text-decoration:underline;}
-code {font-family:"Liberation Mono","Courier New",Courier;color:darkgreen;font-weight:bold;}
-pre {white-space:pre-wrap;word-wrap:break-word;background-color:#eeeeee;border:2px solid #f0ad4e;border-radius:6px;font-size:smaller;padding:14px;}
+code {font-family:"Courier New",Courier;font-size:smaller;}
+pre {white-space:pre-wrap;word-wrap:break-word;background-color:#eeeeee;border:1px solid #f0ad4e;border-radius:6px;padding:14px;}
 pre code {color:#222222;font-weight:normal;}
 pre.no-style {line-height:normal;background-color:#ffffff;border:0px;}
 .command {font-weight:bold;}
@@ -49,7 +47,7 @@ iframe {border:1px solid #aaaaaa;}
 blockquote {color:#333333;margin:0;padding-left:3em;border-left:0.5em #eeeeee solid; font-size:smaller;}
 hr {border:none;height:2px;color:#ffb300;background-color:#ffb300;}
 table.index {border-spacing:0px;}
-table.index td.date {margin:0;padding-left:20px;padding-bottom:5px;line-height:7px;}
+table.index td.date {font-size:x-small;color:#828282;}
 table.oddeven {font-size:smaller;border-spacing:0px;border:1px solid #cccccc;width:100%;max-width:100%;margin-bottom:15px;background-color:transparent;text-align:left;}
 table.oddeven th {font-weight:bold;border:1px solid #cccccc;padding:8px;}
 table.oddeven td {border:1px solid #cccccc;padding:8px;}
