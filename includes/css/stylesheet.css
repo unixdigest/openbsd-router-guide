@@ -44,7 +44,7 @@ iframe {border:1px solid #aaaaaa;}
 .youtube-video-container {position:relative;overflow:hidden;width:100%;}
 .youtube-video-container::after {display: block;content:"";padding-top:56.25%;}
 .youtube-video-container iframe {position:absolute;top:0;left:0;width:100%;height:100%;}
-blockquote {color:#333333;margin:0;padding-left:3em;border-left:0.5em #eeeeee solid; font-size:smaller;}
+blockquote {color:#333333;margin:0;padding:0.2em 3em;border-left:0.2em orange solid;}
 hr {border:none;height:2px;color:#ffb300;background-color:#ffb300;}
 table.index {border-spacing:0px;}
 table.index td.date {font-size:x-small;color:#828282;}
