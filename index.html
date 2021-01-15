@@ -411,13 +411,13 @@ match in all scrub
 <p>The following information about the <code>antispoof</code> modifier is kept for educational purposes.</p>
 <p>Spoofing is when someone fakes an IP address and the <code>antispoof</code> modifier expands to a set of filter rules that will block all traffic with a source IP from the network, directly connected to the specified interface, from entering the system through any other interface. This is sometimes referred to as "bleeding over" or "bleeding through".</p>
 <p>The above <code>antispoof</code> directive is translated by PF into the following:</p>
-<p>block drop in quick on ! em1 inet from 192.168.1.0/24 to any<br>
-block drop in quick inet from 192.168.1.1 to any<br>
-block drop in quick on ! em2 inet from 192.168.2.0/24 to any<br>
-block drop in quick inet from 192.168.2.1 to any<br>
-block drop in quick on ! em3 inet from 192.168.3.0/24 to any<br>
-block drop in quick inet from 192.168.3.1 to any<br>
-</p>
+<pre><code>block drop in quick on ! em1 inet from 192.168.1.0/24 to any
+block drop in quick inet from 192.168.1.1 to any
+block drop in quick on ! em2 inet from 192.168.2.0/24 to any
+block drop in quick inet from 192.168.2.1 to any
+block drop in quick on ! em3 inet from 192.168.3.0/24 to any
+block drop in quick inet from 192.168.3.1 to any
+</code></pre>
 <p>If we take, e.g., the <code>em1</code> NIC rule <code>block drop in quick on ! em1 inet from 192.168.1.0/24 to any</code> then that means: <i>block any traffic from the network with IP addresses ranging from 192.168.1.1 to 192.168.1.255, that doesn't originate from the em1 interface itself, and that is going anywhere</i>. Since the <code>em1</code> interface is the NIC in charge of all IP addresses in that specific range, then no traffic with such an IP address should originate from any other NIC.</p>
 <p class="info info-red" style="font-size:initial;"><b>WARNING:</b><br>Usage of <code>antispoof</code> should be <b>restricted</b> to interfaces that have been assigned an IP address, meaning that if you have unused NICs, or ports on a NIC, make sure to assign an IP address to each or don't include these in the <code>antispoof</code> option.</p>
 <p>As mentioned, I have removed the <code>antispoof</code> rule and we are instead using a strict uRPF check. When a packet is run through the uRPF check, the source IP address of the packet is looked up in the routing table. If the outbound interface is found in the routing table and the entry is the same as the interface that the packet just came in on, then the uRPF check passes. Otherwise it's possible that the packet has had its source address spoofed and it is blocked.</p>
@@ -751,18 +751,16 @@ wikipedia.org.  600     IN      A       91.198.174.192
 <p>When we want to block a domain using DNS we can choose between several methods, but the two most popular is to either redirect the DNS query to a local IP address, such as 127.0.0.1 or 0.0.0.0, or to reply with a Non-existent Internet Domain Names Definition (NXDOMAIN). The NXDOMAIN is a standard reply for a "non-existent Internet or Intranet domain name". If the domain name is unable to be resolved using DNS, a condition called NXDOMAIN occurred.</p>
 <p>We can try to resolve a non-existing domain with the <code>host</code> command:</p>
 <pre><code class="command">$ host a1b7c3n9m3b0.com</code>
-<code>Host a1b7c3n9m3b0.com not found: 3(NXDOMAIN)</code>
-</pre>
+<code>Host a1b7c3n9m3b0.com not found: 3(NXDOMAIN)</code></pre>
 <p>Since the domain name "a1b7c3n9m3b0.com" isn't registered by anyone (at least not while I write this), we get a "NXDOMAIN" response.</p>
 <p>We can also use <code>drill</code>. The relevant information from the output of <code>drill</code> is the <code>rcode</code> field in the "HEADER" section:</p>
-<pre><code class="command">$ drill a1b7c3n9m3b0.com
-;; -&gt;&gt;HEADER&lt;&lt;- opcode: QUERY, <b>rcode: NXDOMAIN</b>, id: 39710
+<pre><code class="command">$ drill a1b7c3n9m3b0.com</code>
+<code>;; -&gt;&gt;HEADER&lt;&lt;- opcode: QUERY, <b>rcode: NXDOMAIN</b>, id: 39710
 …
 </code></pre>
 <p>Or if you prefer <code>dig</code>, then the relevant information is located in the <code>status</code> field in the "HEADER" section:</p>
-<pre><code class="command">$ dig a1b7c3n9m3b0.com
-
-; &lt;&lt;&gt;&gt; DiG 9.16.8 &lt;&lt;&gt;&gt; +search a1b7c3n9m3b0.com
+<pre><code class="command">$ dig a1b7c3n9m3b0.com</code>
+<code>; &lt;&lt;&gt;&gt; DiG 9.16.8 &lt;&lt;&gt;&gt; +search a1b7c3n9m3b0.com
 ;; global options: +cmd
 ;; Got answer:
 ;; -&gt;&gt;HEADER&lt;&lt;- opcode: QUERY, <b>status: NXDOMAIN</b>, id: 48858
