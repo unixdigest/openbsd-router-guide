@@ -1,10 +1,10 @@
-/* unixsheikh.com style sheet v2.2.5
+/* unixsheikh.com style sheet v2.2.6
  * Licensed under Creative Commons Attribution 4.0 International License
  * https://creativecommons.org/licenses/by/4.0/
  */
 @charset "utf-8";
 body {color:#000000;font-family:monospace,"Courier New",Courier;padding:1em;margin:auto;max-width:72em;background:#fefefe;}
-.info {padding:.45rem 1rem;border:1px solid transparent;border-radius:.25rem;}
+.info {padding:.45rem 1rem;border:1px solid transparent;border-radius:.6px;}
 .info-blue {color:#004085;background-color:#cce5ff;border-color:#b8daff;}
 .info-blue hr {border-top-color:#9fcdff;}
 .info-blue .info-link {color:#002752;}
