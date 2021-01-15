@@ -1,4 +1,4 @@
-/* unixsheikh.com style sheet v2.2.4
+/* unixsheikh.com style sheet v2.2.5
  * Licensed under Creative Commons Attribution 4.0 International License
  * https://creativecommons.org/licenses/by/4.0/
  */
@@ -33,7 +33,7 @@ a:visited {color:#828282;}
 nav {margin-bottom:20px;}
 nav a:hover {text-decoration:underline;}
 code {font-family:"Courier New",Courier;font-size:smaller;}
-pre {font-family:"Courier New",Courier;font-size:smaller;color:#222222;white-space:pre-wrap;word-wrap:break-word;background-color:#eeeeee;border:1px solid #c4bcb3;border-radius:6px;padding:14px;}
+pre {font-family:"Courier New",Courier;font-size:smaller;color:#222222;white-space:pre-wrap;word-wrap:break-word;background-color:#eeeeee;border:1px solid #aaaaaa;border-radius:6px;padding:14px;}
 pre.no-style {line-height:normal;background-color:#ffffff;border:0px;}
 a {color:#1168cc;text-decoration:none;}
 q {font-style:italic;}
