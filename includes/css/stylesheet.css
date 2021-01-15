@@ -33,10 +33,8 @@ a:visited {color:#828282;}
 nav {margin-bottom:20px;}
 nav a:hover {text-decoration:underline;}
 code {font-family:"Courier New",Courier;font-size:smaller;}
-pre {white-space:pre-wrap;word-wrap:break-word;background-color:#eeeeee;border:1px solid #c4bcb3;border-radius:6px;padding:14px;}
-pre code {color:#222222;font-weight:normal;}
+pre {font-family:"Courier New",Courier;font-size:smaller;color:#222222;white-space:pre-wrap;word-wrap:break-word;background-color:#eeeeee;border:1px solid #c4bcb3;border-radius:6px;padding:14px;}
 pre.no-style {line-height:normal;background-color:#ffffff;border:0px;}
-.command {font-weight:bold;}
 a {color:#1168cc;text-decoration:none;}
 q {font-style:italic;}
 img {max-width:100%;border:0;-ms-interpolation-mode:bicubic;vertical-align:middle;}
