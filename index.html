@@ -17,7 +17,7 @@
         <td>
             <h1 class="title">OpenBSD Router Guide</h1>
             <h4>Network segmenting firewall, DHCP, DNS with Unbound, domain blocking and much more<br>
-                <span style="font-size:x-small;font-weight:initial;">OpenBSD: 6.8 · Published: 2020-11-05 · Updated: 2021-01-19 · Version: 1.6.3</span>
+                <span style="font-size:x-small;font-weight:initial;">OpenBSD: 6.8 · Published: 2020-11-05 · Updated: 2021-01-19 · Version: 1.6.4</span>
             </h4>
         </td>
     </tr>
@@ -93,6 +93,7 @@
             <li><a href="#inspecting-doh">Inspecting DNS over HTTPS (DoH)</a></li>
             <li><a href="#blocking-doh">Blocking DNS over HTTPS (DoH)</a></li>
             <li><a href="#dhcp-domain">Adding the domain-name option to DHCP and using a FQDN</a></li>
+            <li><a href="#pf-badhost">Adding pf-badhost</a></li>
             <li><a href="#recommended-reading">Recommended reading</a></li>
             <li><a href="#how-to-contribute">How to contribute to the guide?</a></li>
         </ul>
@@ -1208,13 +1209,18 @@ nameserver 192.168.1.1
 </pre>
 <p>You can expand on the above example to multiple domains and multiple hosts across all segments.</p>
 
+<h3 id="pf-badhost">Adding pf-badhost</h3>
+
+<p>When you have setup your OpenBSD router I highly recommend you setup <a href="https://www.geoghegan.ca/pfbadhost.html">pf-badhost</a> to your setup!</p>
+<p>pf-badhost is a lightweight security script made by <a href="https://www.geoghegan.ca/about.html">Jordan Geoghegan</a> that blocks many of the internet's biggest irritants. Annoyances such as SSH and SMTP bruteforcers are largely eliminated by the script.</p>
+<p>pf-badhost periodically pulls IP addresses from well-known spammer-IPs databases, such as Spamhaus, Firehol, Emerging Threats and Binary Defense, where bad IP addresses are frequently logged. pf-badhost then adds the collected IP addresses to the PF firewall as a table that is default blocked.</p>
+
 <h3 id="recommended-reading">Recommended reading</h3>
 <ul>
     <li><a href="https://www.openbsd.org/faq/pf/index.html">OpenBSD PF - User's Guide</a> from the OpenBSD FAQ.</li>
     <li><a href="https://mwl.io/nonfiction/os#ao2e">Absolute OpenBSD, 2nd Edition</a> by Michael Warren Lucas. Some of the PF syntax has changed since Michael wrote the book, but it is still very useful.</li>
     <li><a href="https://mwl.io/nonfiction/networking#n4sa">Networking for System Administrators</a> by Michael Warren Lucas.</li>
     <li><a href="https://home.nuug.no/~peter/openbsd_and_you/#1">OpenBSD and You</a></li>
-    <li><a href="https://www.geoghegan.ca/pfbadhost.html">pf-badhost</a> blocks many of the internet's biggest irritants. Annoyances such as SSH and SMTP bruteforcers are largely eliminated.</li>
 </ul>
 
 <h3 id="how-to-contribute">How to contribute to the guide?</h3>
