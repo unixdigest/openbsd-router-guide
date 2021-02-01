@@ -484,7 +484,7 @@ pass in on $p_lan inet proto udp from any port 67
 # Allow access to the Internet by removing the comment.
 # This rule will also block access to our two other segments, the grown-ups LAN
 # and the children's LAN.
-# pass in on $p_lan to { ! 192.168.1.0/24 ! 192.168.2.0/24 }
+# pass in on $p_lan to { ! $g_lan:network ! $c_lan:network }
 
 # Always block DNS queries not addressed to our DNS server.
 block return in quick on $p_lan proto { udp tcp} to ! $p_lan port { 53 853 }
