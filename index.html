@@ -489,7 +489,7 @@ pass in on $p_lan inet proto udp from any port 67
 # Always block DNS queries not addressed to our DNS server.
 block return in quick on $p_lan proto { udp tcp} to ! $p_lan port { 53 853 }
 </pre>
-<p>The exception rule in the above <code>pass in on $p_lan to { ! 192.168.1.0/24 ! 192.168.2.0/24 }</code> can also be expressed differently by allowing all access and then explicitly blocking access to our other segments. The following does the same, but is maybe a bit more clear to read and understand. Use whichever you find gives most clarity as clarity is most importantin firewall rules:</p>
+<p>The exception rule in the above <code>pass in on $p_lan to { ! 192.168.1.0/24 ! 192.168.2.0/24 }</code> can also be expressed differently by allowing all access and then explicitly blocking access to our other segments. The following does the same, but is maybe a bit more clear to read and understand. Use whichever you find gives most clarity (clarity is the most important):</p>
 <pre># Allow access to the Internet by removing the comments.
 # This rule will also block access to our two other segments, the grown-ups LAN
 # and the children's LAN.
