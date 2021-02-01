@@ -489,7 +489,13 @@ pass in on $p_lan inet proto udp from any port 67
 # Always block DNS queries not addressed to our DNS server.
 block return in quick on $p_lan proto { udp tcp} to ! $p_lan port { 53 853 }
 </pre>
-<p>In this setup, the only thing that the web server can do is to get an IP address from the router. It cannot ping or otherwise contact any other machine on our internal network, and it cannot access the Internet unless the comment is removed from the rule <code>pass in on $p_lan to { ! 192.168.1.0/24 ! 192.168.2.0/24 }</code>.</p>
+<p>The exception rule in the above <code>pass in on $p_lan to { ! 192.168.1.0/24 ! 192.168.2.0/24 }</code> can also be expressed differently by allowing all access and then explicitly blocking access to our other segments. The following does the same, but is maybe a bit more clear to read and understand. Use whichever you find gives most clarity as clarity is most importantin firewall rules:</p>
+<pre># Allow access to the Internet by removing the comments.
+# This rule will also block access to our two other segments, the grown-ups LAN
+# and the children's LAN.
+# pass in on $p_lan inet
+# block in on $p_lan to { $g_lan:network $c_lan:network }</pre>
+<p>In whichever you use, the only thing that the web server can do is to get an IP address from the router. It cannot ping or otherwise contact any other machine on our internal network, and it cannot access the Internet until we explicitly un-comment the ruling.</p>
 <p>These restrictions doesn't mean that the web server cannot respond to oncoming requests. The reason for this is that we will add a rule in our redirect section in a moment that allows clients on the Internet to access our publicly faced web server, when this happens the response from the web server will become a part of the state established by the original connection from the client from outside, which the web server will then be permitted to respond to.</p>
 <p>Now we come to the network address translation (NAT). This is where the router routes packages from one segment of the network to another, in this specific case from our internal network to the Internet outside, and then any reply coming from the Internet outside, back in to the originator of the transmission. I prefer the <code>:network</code> parameter, which translates to the network(s) attached to the interface, and I prefer to be specific with one rule for each relevant segment.</p>
 <pre>#---------------------------------#
