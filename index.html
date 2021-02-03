@@ -17,7 +17,7 @@
         <td>
             <h1 class="title">OpenBSD Router Guide</h1>
             <h4>Network segmenting firewall, DHCP, DNS with Unbound, domain blocking and much more<br>
-                <span style="font-size:x-small;font-weight:initial;">OpenBSD: 6.8 · Published: 2020-11-05 · Updated: 2021-02-01 · Version: 1.6.5</span>
+                <span style="font-size:x-small;font-weight:initial;">OpenBSD: 6.8 · Published: 2020-11-05 · Updated: 2021-02-03 · Version: 1.7.0</span>
             </h4>
         </td>
     </tr>
@@ -440,6 +440,12 @@ block drop in quick inet from 192.168.3.1 to any
 </ul>
 <p>In the above setup we allow ICMP, but put a "rate limit" on the number of ping requests the router will answer. With the <code>max-pkt-rate 100/10</code> modifier the router will stop responding to pings if we get a more than a 100 pings in 10 seconds.</p>
 <p>Should you still want to completely block ICMP for some reason, simply remove the 3 rules after the "Allow ICMP" comment.</p>
+<p>Last, but not least, in the above setup the segmented LANs are default blocked between each other. This means that any machines located on <code>$p_lan</code> cannot reach machines located on <code>$c_lan</code>.</p>
+<p>If you need machines on one segment to reach machines on another segment, you need to explicitly open up for that like this:</p>
+<pre>pass out inet from $g_lan:network to $c_lan:network
+pass out inet from $g_lan:network to $p_lan:network
+</pre>
+<p>In this case we allow for machines on the <code>$g_lan</code> to reach machines on both <code>$c_lan</code> and <code>$p_lan</code>. This can be beneficial if you need to log in remotely a machine on the public LAN or the childrens LAN.</p>
 <p>Now we get to the LAN segment for the grown-ups in the house.</p>
 <pre>#---------------------------------#
 # Grown-ups LAN Setup
@@ -482,21 +488,13 @@ block return in quick on $c_lan proto { udp tcp} to ! $c_lan port { 53 853 }
 pass in on $p_lan inet proto udp from any port 67
 
 # Allow access to the Internet by removing the comment.
-# This rule will also block access to our two other segments, the grown-ups LAN
-# and the children's LAN.
-# pass in on $p_lan to { ! $g_lan:network ! $c_lan:network }
+# Useful when a machine needs to be updated.
+# pass in on $p_lan inet
 
 # Always block DNS queries not addressed to our DNS server.
 block return in quick on $p_lan proto { udp tcp} to ! $p_lan port { 53 853 }
 </pre>
-<p>The exception rule in the above <code>pass in on $p_lan to { ! 192.168.1.0/24 ! 192.168.2.0/24 }</code> can also be expressed differently by allowing all access and then explicitly blocking access to our other segments. The following does the same, but is maybe a bit more clear to read and understand. Use whichever you find gives most clarity (clarity is the most important):</p>
-<pre># Allow access to the Internet by removing the comments.
-# This rule will also block access to our two other segments, the grown-ups LAN
-# and the children's LAN.
-# pass in on $p_lan inet
-# block in on $p_lan to { $g_lan:network $c_lan:network }</pre>
-<p>In whichever you use, the only thing that the web server can do is to get an IP address from the router. It cannot ping or otherwise contact any other machine on our internal network, and it cannot access the Internet until we explicitly un-comment the ruling.</p>
-<p>These restrictions doesn't mean that the web server cannot respond to oncoming requests. The reason for this is that we will add a rule in our redirect section in a moment that allows clients on the Internet to access our publicly faced web server, when this happens the response from the web server will become a part of the state established by the original connection from the client from outside, which the web server will then be permitted to respond to.</p>
+<p>These default restrictions doesn't mean that the web server cannot respond to oncoming requests. The reason for this is that we will add a rule in our redirect section in a moment that allows clients on the Internet to access our publicly faced web server, when this happens the response from the web server will become a part of the state established by the original connection from the client from outside, which the web server will then be permitted to respond to.</p>
 <p>Now we come to the network address translation (NAT). This is where the router routes packages from one segment of the network to another, in this specific case from our internal network to the Internet outside, and then any reply coming from the Internet outside, back in to the originator of the transmission. I prefer the <code>:network</code> parameter, which translates to the network(s) attached to the interface, and I prefer to be specific with one rule for each relevant segment.</p>
 <pre>#---------------------------------#
 # NAT
