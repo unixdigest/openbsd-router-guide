@@ -17,7 +17,7 @@
         <td>
             <h1 class="title">OpenBSD Router Guide</h1>
             <h4>Network segmenting firewall, DHCP, DNS with Unbound, domain blocking and much more<br>
-                <span style="font-size:x-small;font-weight:initial;">OpenBSD: 6.8 · Published: 2020-11-05 · Updated: 2021-02-03 · Version: 1.7.0</span>
+                <span style="font-size:x-small;font-weight:initial;">OpenBSD: 6.8 · Published: 2020-11-05 · Updated: 2021-02-03 · Version: 1.7.1</span>
             </h4>
         </td>
     </tr>
@@ -270,8 +270,10 @@ subnet 192.168.3.0 netmask 255.255.255.0 {
 
 <h2 id="pf-setup">PF setup</h2>
 <p>Before we begin I assume that you have read both the <a href="https://www.openbsd.org/faq/pf/index.html">PF - User's guide</a> and the <a href="https://man.openbsd.org/pf.conf">pf.conf</a> man page, especially the man page is very important. Even if you don't understand all the different options make sure you read the documentation! For a complete and in-depth view of what PF can do, take a look at the <a href="https://man.openbsd.org/pf">pf</a> man page.</p>
-<p>Also, let me start by saying that even though the syntax for PF is very readable, it is very easy to make mistakes when writing firewall rules. Even senior and experienced system administrators makes mistakes when writing firewall rules.</p>
-<p>Writing firewall rules requires that you carefully plan out your goals, understand how to implement the different rules in order to achieve the desired results, and at the same time take your precautions against doing it wrong and accidentally logging yourself out :) I think we've all done that at one time or another, whether in haste, tiredness, or just by mistake.</p>
+<p>Also, let me start by saying that even though the syntax for PF is very readable, it is <strong>very easy</strong> to make mistakes when writing firewall rules. Even senior and experienced system administrators makes mistakes when writing firewall rules.</p>
+<p>Writing firewall rules requires that you carefully plan out your goals, understand how to implement the different rules in order to achieve the desired results, and at the same time take your precautions against doing it wrong and accidentally logging yourself out :) I think we've all done that at one time or another, whether in haste, tiredness, or just by mistake, I know I have several times.</p>
+<p>The most important part is that you don't make any assumptions. Always test your rules thoroughly. If something isn't working, try to remove as much as possible from your rules so you're left with the rules that's causing problems, and deal with the setup step by step.</p>
+<p>The really difficult part is to remember how data packets arrive at one NIC and how they are then forwarded to a machine on another NIC, and then relating this "journey" correctly to the terms <b>in</b>, <b>out</b>, <b>from</b> and <b>to</b>. These terms often does not work exactly as we tend to think.</p>
 
 <h3 id="clarifications">Clarifications</h3>
 <p>I want to start by clarifying some of the common default settings and keywords in PF.</p>
