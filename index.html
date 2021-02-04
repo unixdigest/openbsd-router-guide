@@ -17,7 +17,7 @@
         <td>
             <h1 class="title">OpenBSD Router Guide</h1>
             <h4>Network segmenting firewall, DHCP, DNS with Unbound, domain blocking and much more<br>
-                <span style="font-size:x-small;font-weight:initial;">OpenBSD: 6.8 · Published: 2020-11-05 · Updated: 2021-02-03 · Version: 1.7.1</span>
+                <span style="font-size:x-small;font-weight:initial;">OpenBSD: 6.8 · Published: 2020-11-05 · Updated: 2021-02-04 · Version: 1.7.2</span>
             </h4>
         </td>
     </tr>
@@ -834,8 +834,8 @@ PING 0.0.0.0 (127.0.0.1) 56(84) bytes of data.
 
     # Control who has access.
     access-control: 0.0.0.0/0 refuse
-    access-control: 127.0.0.0/8 allow
     access-control: ::0/0 refuse
+    access-control: 127.0.0.0/8 allow
     access-control: ::1 allow
     access-control: 192.168.1.0/24 allow
     access-control: 192.168.2.0/24 allow
@@ -904,6 +904,14 @@ thread0.num.expired=0
 <p>If you want to see what name servers Unbound queries for a specific domain, you can do that with:</p>
 <pre><b># unbound-control lookup wikipedia.org</b></pre>
 <p>Take a look at the man page for <a href="https://man.openbsd.org/unbound-control">unbound-control</a> for further options and commands.</p>
+
+<h3>Override ridiculously low TTL settings</h3>
+<p>One thing that has become a great nuisance is people setting ridiculously low TTL values for their domains. For some reason it has almost become a trend to have a default value of 60 seconds.</p>
+<p>The problem with a very low TTL is that it makes DNS caching completely useless. A query will only use the cached reply as long as the TTL hasn't expired. Even though the RFCs say that a TTL must be respected, with such low values DNS becomes extremely inefficient. I therefore recommend that you override the TTL setting by setting your own default at one hour. Another improvement in DNS request speed is to reduce latency by serving the outdated record before updating it instead of the other way around.</p>
+<pre>cache-min-ttl: 3600
+serve-expired: yes
+</pre>
+<p>One theoretical problem with increasing the TTL is that a domain might get a new IP address which then cannot be resolved because you have an old entry in the cache. However, in practice the risk of running into an outdated domain is minimal and it is well worth the improved usage of the cache to set a default minimum TTL to an hour.</p>
 
 <h3 id="lets-block-some-domains">Let's block some domains!</h3>
 <p>Now we get to the interesting part about domain blocking.</p>
@@ -1227,6 +1235,7 @@ nameserver 192.168.1.1
     <li><a href="https://mwl.io/nonfiction/os#ao2e">Absolute OpenBSD, 2nd Edition</a> by Michael Warren Lucas. Some of the PF syntax has changed since Michael wrote the book, but it is still very useful.</li>
     <li><a href="https://mwl.io/nonfiction/networking#n4sa">Networking for System Administrators</a> by Michael Warren Lucas.</li>
     <li><a href="https://home.nuug.no/~peter/openbsd_and_you/#1">OpenBSD and You</a></li>
+    <li><a href="https://blog.apnic.net/2019/11/12/stop-using-ridiculously-low-dns-ttls/">Stop using ridiculously low DNS TTLs</a></li>
 </ul>
 
 <h3 id="how-to-contribute">How to contribute to the guide?</h3>
