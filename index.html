@@ -17,7 +17,7 @@
         <td>
             <h1 class="title">OpenBSD Router Guide</h1>
             <h4>Network segmenting firewall, DHCP, DNS with Unbound, domain blocking and much more<br>
-                <span style="font-size:x-small;font-weight:initial;">OpenBSD: 6.8 · Published: 2020-11-05 · Updated: 2021-02-04 · Version: 1.7.2</span>
+                <span style="font-size:x-small;font-weight:initial;">OpenBSD: 6.8 · Published: 2020-11-05 · Updated: 2021-02-28 · Version: 1.7.3</span>
             </h4>
         </td>
     </tr>
@@ -108,13 +108,13 @@
 </ul>
 
 <h2 id="why-a-firewall">Why a firewall?</h2>
+<p class="info info-blue" style="font-size:initial;"><b>NOTE:</b><br>Currently this guide only deals with IPv4 as most people still don't use IPv6 and many ISPs also still only use IPv4, but IPv6 is planned for a future update of the guide.</p>
+
 <p>Almost no matter how you connect to the Internet from your home or office, you need a real firewall between you and the modem or router that your ISP has provided you with.</p>
 <p>Very rarely do consumer-grade modems or routers get firmware updates and they are often vulnerable to <a href="https://en.wikipedia.org/wiki/Home_router#Security">network attacks</a> that turns these devices into <a href="https://en.wikipedia.org/wiki/Botnet">botnets</a>, such like the <a href="https://en.wikipedia.org/wiki/Mirai_(malware)">Mirai malware</a>. Many consumer-grade modems and routers is to blame for some of the largest <a href="https://en.wikipedia.org/wiki/Distributed_denial_of_service_attack">distributed denial of service (DDoS) attacks</a>.</p>
 <p>A firewall between you and your ISP modem or router cannot protect your modem or router device against attacks, but it can protect your computers and devices on the inside of the network, and it can help you monitor and control the traffic that comes and goes to and from your local network.</p>
 <p>Without a firewall between your local network and the ISP modem or router you could basically consider this an open door policy, like leaving the door to your house wide open, because you cannot trust the equipment from your ISP.</p>
 <p>It is always a really good idea to put a real firewall between your local network and the Internet, and with OpenBSD you get an very solid solution.</p>
-
-<p class="info info-blue" style="font-size:initial;"><b>NOTE:</b><br>Currently this guide only deals with IPv4 as most people still don't use IPv6 and many ISPs also still only use IPv4, but IPv6 is planned for a future update of the guide.</p>
 
 <h2 id="the-hardware">The hardware</h2>
 <p>You don't have to buy expensive hardware to get an effective router and firewall for your house or office. Even with cheap and "low end" hardware you can get a very solid solution.</p>
