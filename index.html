@@ -206,9 +206,9 @@ em2: flags=8843&lt;UP,BROADCAST,RUNNING,SIMPLEX,MULTICAST&gt; mtu 1500
 <p>If you don't need a public IP address and you get your IP from your ISP via DHCP, then just enter <code>dhcp</code> instead:</p>
 <pre><b># echo 'dhcp' &gt; /etc/hostname.em0</b></pre>
 <p>Then I'll set the rest of the NIC ports up with the IP addresses I have previously illustrated.</p>
-<pre># <b>echo 'inet 192.168.1.1 255.255.254.0 NONE' &gt; /etc/hostname.em1</b>
-<b># echo 'inet 192.168.2.1 255.255.254.0 NONE' &gt; /etc/hostname.em2</b>
-<b># echo 'inet 192.168.3.1 255.255.254.0 NONE' &gt; /etc/hostname.em3</b>
+<pre># <b>echo 'inet 192.168.1.1 255.255.255.0 NONE' &gt; /etc/hostname.em1</b>
+<b># echo 'inet 192.168.2.1 255.255.255.0 NONE' &gt; /etc/hostname.em2</b>
+<b># echo 'inet 192.168.3.1 255.255.255.0 NONE' &gt; /etc/hostname.em3</b>
 </pre>
 <p>Take a look at <a href="https://man.openbsd.org/hostname.if">hostname.if</a> for more information.</p>
 <p>Then I need to setup the IP of the ISP gateway. Depending on the setup of your ISP this might be another IP address than the one from the ISP modem or router. If you don't add the <code>/etc/mygate</code> then no default gateway is added to the <a href="https://en.wikipedia.org/wiki/Routing_table">routing table</a>. You don't need the <code>/etc/mygate</code> if you get your IP from your ISP modem or router via DHCP. If you use the <code>dhcp</code> directive in any <code>hostname.ifX</code> then the entries in <code>/etc/mygate</code> will be ignored. This is because the card that get its IP address from a DHCP server will also get gateway routing information supplied.</p>
