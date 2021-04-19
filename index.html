@@ -17,7 +17,7 @@
         <td>
             <h1 class="title">OpenBSD Router Guide</h1>
             <h4>Network segmenting firewall, DHCP, DNS with Unbound, domain blocking and much more<br>
-                <span style="font-size:x-small;font-weight:initial;">OpenBSD: 6.8 · Published: 2020-11-05 · Updated: 2021-03-11 · Version: 1.8.0</span>
+                <span style="font-size:x-small;font-weight:initial;">OpenBSD: 6.8 · Published: 2020-11-05 · Updated: 2021-04-19 · Version: 1.8.1</span>
             </h4>
         </td>
     </tr>
@@ -409,6 +409,7 @@ pass in proto icmp tagged ICMP_IN max-pkt-rate 100/10
 # Default allow all NICs to pass out data through the Ethernet port.
 pass out inet
 </pre>
+<p class="info info-blue" style="font-size:initial;"><b>NOTE:</b><br>Please note that the <code>pass out inet</code> does not allow traffic to "jump" between interfaces. The interfaces have been protected against spoofing in <code>block in quick from urpf-failed</code>. What <code>pass out inet</code> is doing is allowing traffic to go from each interface to what ever computers are attached to it.</p>
 <p>In previous versions of this guide (before version 1.5.0) I used to have the <a href="https://man.openbsd.org/pf.conf#Scrub">scrub</a> statement present in the setup above, however after having consulted with <a href="http://henningbrauer.com/">Henning Brauer</a> from the OpenBSD team (thanks Henning!) and doing some further research, I have decided to remove it as it deals with very specific corner cases (please see the documentation). You only need the <code>scrub</code> rule if a host on your network generates fragmented packets with the "dont‑fragment" flag set. The default PF behavior without the <code>scrub</code> rule is better suited for general usage.</p>
 <p>The OpenBSD <a href="https://www.openbsd.org/faq/pf/example1.html">FAQ</a> contains an example setup for a very basic router, with some specific values for <code>scrub</code>, but my recommendation is to only use <code>scrub</code> when you know for a fact that you need it. If you do need it, insert it into the configuration after the <code>set skip</code> rule for the loopback interface, like this:</p>
 <pre>set skip on lo0
@@ -442,7 +443,7 @@ block drop in quick inet from 192.168.3.1 to any
 </ul>
 <p>In the above setup we allow ICMP, but put a "rate limit" on the number of ping requests the router will answer. With the <code>max-pkt-rate 100/10</code> modifier the router will stop responding to pings if we get a more than a 100 pings in 10 seconds.</p>
 <p>Should you still want to completely block ICMP for some reason, simply remove the 3 rules after the "Allow ICMP" comment.</p>
-<p>Last, but not least, in the above setup the segmented LANs are default blocked between each other. This means that any machines located on <code>$p_lan</code> cannot reach machines located on <code>$c_lan</code>.</p>
+<p>Last, but not least, in the above setup the segmented LANs are default blocked between each other, as mentioned. This means that any machines located on <code>$p_lan</code> cannot reach machines located on <code>$c_lan</code>, etc.</p>
 <p>If you need machines on one segment to reach machines on another segment, you need to explicitly open up for that like this:</p>
 <pre>pass out inet from $g_lan:network to $c_lan:network
 pass out inet from $g_lan:network to $p_lan:network
