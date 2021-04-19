@@ -17,7 +17,7 @@
         <td>
             <h1 class="title">OpenBSD Router Guide</h1>
             <h4>Network segmenting firewall, DHCP, DNS with Unbound, domain blocking and much more<br>
-                <span style="font-size:x-small;font-weight:initial;">OpenBSD: 6.8 · Published: 2020-11-05 · Updated: 2021-04-19 · Version: 1.9.0</span>
+                <span style="font-size:x-small;font-weight:initial;">OpenBSD: 6.8 · Published: 2020-11-05 · Updated: 2021-04-19 · Version: 1.9.1</span>
             </h4>
         </td>
     </tr>
@@ -394,7 +394,7 @@ block in quick from urpf-failed
 block in quick on $ext_if from &lt;martians&gt; to any
 block return out quick on $ext_if from any to &lt;martians&gt;
 
-# Default blocking all traffic in on all LAN NICs from any PC or device.
+# Default blocking all traffic in on all LAN NICs from any computer or device.
 block return in on { $g_lan $c_lan $p_lan }
 
 # Default blocking all traffic in on the external NIC from the Internet.
@@ -448,8 +448,10 @@ block drop in quick inet from 192.168.3.1 to any
 # Grown-ups LAN Setup
 #---------------------------------#
 
-# Allow any PC on the grown-ups LAN to send data in through the NICs Ethernet
-# port.
+# Allow any computer or device on the grown-ups LAN to send data in through the
+# NIC. This means any computer attached to this network interface can pass in
+# data reaching anywhere (i.e. the Internet or any of the computers attached to
+# any of the other NICs).
 pass in on $g_lan
 
 # Always block DNS queries not addressed to our DNS server.
@@ -458,9 +460,11 @@ block return in quick on $g_lan proto { udp tcp } to ! $g_lan port { 53 853 }
 # Block the network printer from "phoning home".
 block in quick on $g_lan from 192.168.1.8
 
-# Allow data to pass out through the NIC.
-# This also means that machines on the grown-ups LAN can reach machines on the
-# other segments.
+# Allow data to pass out through the NIC to the computers or devices attached
+# to it. This is data coming from the router, reaching any computers or devices
+# connected to it on the grown-ups NIC.
+# Without this we cannot even ping computers attached to the grown-ups NIC from
+# the router itself.
 pass out on $g_lan inet keep state
 </pre>
 <p>In this example we have a network printer attached to the grown-ups network that we don't want to access the Internet or anywhere else, just in case it has some kind of spying firmware. We do that by saying, <i>block all data coming in on em1 from the IP address 192.168.1.8 going to any IP address</i>.</p>
@@ -472,16 +476,21 @@ pass out on $g_lan inet keep state
 # Children's LAN Setup
 #---------------------------------#
 
-# Allow any PC on the children's LAN to send data in through the NICs Ethernet
-# port.
+# Allow any computers or devices on the childrens LAN to send data in through
+# the NIC. This means any computer attached to this network interface can pass
+# in data reaching anywhere (i.e. the Internet or any of the computers attached
+# to any of the other NICs).
 pass in on $c_lan
 
 # Always block DNS queries not addressed to our DNS server.
 block return in quick on $c_lan proto { udp tcp} to ! $c_lan port { 53 853 }
 
-# If you want to open completely up for the childrens LAN to reach the Internet
-# and the other segments you need to uncomment the following.
-#pass out on $c_lan inet keep state
+# Allow data to pass out through the NIC to the computers attached to it.
+# This is data coming from the router, reaching any computers or devices
+# connected to it on the childrens NIC.
+# Without this we cannot even ping computers attached to the childrens NIC from
+# the router itself.
+pass out on $c_lan inet keep state
 </pre>
 <p>Then we get to the LAN with a publicly facing web server. Since we have a publicly facing web server we set up a couple of restrictions. Should the web server ever get compromised the intruder will have a hard time figuring out what else is located on our internal network.</p>
 <p>We block all access except for DHCP, in order for the web server to get an IP address from our router, and then <b>only manually</b> open other things up whenever we need to update the machine or do something else. I have commented out the options we need, when we need to open things up, leaving the restricting parts enabled. When you need to update the server you open up for DNS and general access to the Internet.</p>
@@ -490,23 +499,39 @@ block return in quick on $c_lan proto { udp tcp} to ! $c_lan port { 53 853 }
 # Public LAN Setup
 #---------------------------------#
 
-# Allow access to DHCP.
+# Allow any computer or device attached to the public NIC to get an IP address.
 pass in on $p_lan inet proto udp from any port 67
+
+# Allow any computer or device attached to the public NIC to make DNS queries.
+# Uncomment if you need it.
+#pass in on $p_lan inet proto udp from any port 53
 
 # Always block DNS queries not addressed to our DNS server.
 block return in quick on $p_lan proto { udp tcp} to ! $p_lan port { 53 853 }
 
-# If we run any server on the public LAN NIC, then that has to be able to
-# pass out data.
-pass out on $p_lan inet keep state
-
-# When/if you want any server running on the public LAN to access the Internet
-# uncomment to open up.
+# When/if you want any computer attached to the public LAN to access the
+# Internet uncomment this to open up. This is relevant for when you need to do
+# an upgrade.
 #pass in on $p_lan inet
 
 # We do not want this segment to reach any of the other segments no matter what,
 # so we explicitly block for that last.
+# We have several options. If we use this:
+# block drop in on $p_lan to 192.168/16
+# Then we block for all subnets, but this also means that the computers
+# attached to the public NIC cannot do DNS queries.
+# In my opinion it is much better to be explicit and block the specific
+# segments we need to block. But it depends on your needs.
+# This blocks computers on the public NIC to reach any computer on the other
+# two networking segments.
 block drop in on $p_lan to { $g_lan:network $c_lan:network }
+
+# If we run any server on the public LAN NIC then we need to pass out data from
+# the NIC to that particular computer, otherwise nobody can reach it. This is
+# data coming from the NIC going to the computer.
+# Without this we cannot even ping computers attached to the public NIC from
+# the router itself.
+pass out on $p_lan inet keep state
 </pre>
 <p>Now we come to the network address translation (NAT). This is where the router routes packages from one segment of the network to another, in this specific case from our internal network to the Internet outside, and then any reply coming from the Internet outside, back in to the originator of the transmission. I prefer the <code>:network</code> parameter, which translates to the network(s) attached to the NIC, and I prefer to be specific with one rule for each relevant segment.</p>
 <pre>#---------------------------------#
