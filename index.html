@@ -321,7 +321,7 @@ subnet 192.168.3.0 netmask 255.255.255.0 {
 <li><code>from</code> and <code>to</code>
     <ul style="list-style-type:none;">
         <li><p>The <code>from</code> and <code>to</code> rule modifiers apply <b>only to packets with the specified source and destination addresses and ports</b>. Both the hostname or IP address, port, and OS specifications are optional.</p>
-        <p>When we're dealing with a router with multiple NICs it's easy to think like this: <i>I want to pass in packets from the external interface (the NIC attached to the Internet) and then have them go to the first LAN interface and from there out to a specific PC on that LAN</i>, meaning we follow the "trail of data" in our minds, and then write that out into something like this: <code>pass in on $ext_if from $ext_if to $p_lan port 80</code>. But this will not make the HTTP traffic "magically" appear on port 80 on the LAN with a PC attached with a specific IP address. We would also require a specific <code>pass out</code> rule and furthermore need to determine exactly on which machine we want the data to end up. Unless you are really dealing with a very specific requirement, you never need such rules in your ruleset! The <a href="https://www.openbsd.org/faq/pf/filter.html#urpf">Unicast Reverse Path Forwarding (uRPF)</a> features of PF will protect your internal network very well and with a basic setup of correct network address translation (NAT), with the <code>nat-to</code> option, and redirection with the <code>rdr-to</code> option, PF will handle the packages from the inside to the outside and vice versa.</p>
+        <p>When we're dealing with a router with multiple NICs it's easy to think like this: <i>I want to pass in packets from the external NIC (the NIC attached to the Internet) and then have them go to the first LAN NIC and from there out to a specific PC on that LAN</i>, meaning we follow the "trail of data" in our minds, and then write that out into something like this: <code>pass in on $ext_if from $ext_if to $p_lan port 80</code>. But this will not make the HTTP traffic "magically" appear on port 80 on the LAN with a PC attached with a specific IP address. We would also require a specific <code>pass out</code> rule and furthermore need to determine exactly on which machine we want the data to end up. Unless you are really dealing with a very specific requirement, you never need such rules in your ruleset! The <a href="https://www.openbsd.org/faq/pf/filter.html#urpf">Unicast Reverse Path Forwarding (uRPF)</a> features of PF will protect your internal network very well and with a basic setup of correct network address translation (NAT), with the <code>nat-to</code> option, and redirection with the <code>rdr-to</code> option, PF will handle the packages from the inside to the outside and vice versa.</p>
         <p>The <code>all</code> parameter is equivalent to writing <code>from any to any</code>. <b>Without explicitly declaring the direction, the default is</b> <code>from any to any</code>. This rule: <code>pass in on $p_lan proto udp to port dns</code> translates into this: <code>pass in on em3 inet proto udp from any to any port = 53</code></p>
         <p>There is also no need to use <code>to any port dns</code>, the <code>any</code> part is the default. You do however need the <code>to port dns</code></p></li>
     </ul>
@@ -367,7 +367,7 @@ g_lan="em1"  # Grown-ups LAN.
 c_lan="em2"  # Children's LAN.
 p_lan="em3"  # Public LAN.
 </pre>
-<p>Next we set up a table for non-routable IP address. We do that because a very common network misconfiguration is the kind that lets traffic with non-routable addresses out to the Internet. We will use the table in our ruleset to block any attempt to initiate contact to non-routable addresses through the routers external interface.</p>
+<p>Next we set up a table for non-routable IP address. We do that because a very common network misconfiguration is the kind that lets traffic with non-routable addresses out to the Internet. We will use the table in our ruleset to block any attempt to initiate contact to non-routable addresses through the routers external NIC.</p>
 <pre>#---------------------------------#
 # Tables
 #---------------------------------#
@@ -385,7 +385,7 @@ table &lt;martians&gt; { 0.0.0.0/8 10.0.0.0/8 127.0.0.0/8 169.254.0.0/16     \
 #---------------------------------#
 set skip on lo0
 
-# Spoofing protection for all interfaces.
+# Spoofing protection for all NICs.
 block in from no-route
 block in quick from urpf-failed
 
@@ -397,7 +397,7 @@ block return out quick on $ext_if from any to &lt;martians&gt;
 # Default blocking all traffic in on all LAN NICs from any PC or device.
 block return in on { $g_lan $c_lan $p_lan }
 
-# Default blocking all traffic in on the external interface from the Internet.
+# Default blocking all traffic in on the external NIC from the Internet.
 # Let's log that too.
 block drop in log on $ext_if
 
@@ -407,7 +407,7 @@ block drop in on $ext_if proto icmp
 pass in proto icmp tagged ICMP_IN max-pkt-rate 100/10
 
 # We need the router to have access to the Internet.
-# So default allow data to pass out through the external interface.
+# So default allow data to pass out through the external NIC.
 pass out inet from $ext_if
 </pre>
 <p>In previous versions of this guide (before version 1.5.0) I used to have the <a href="https://man.openbsd.org/pf.conf#Scrub">scrub</a> statement present in the setup above, however after having consulted with <a href="http://henningbrauer.com/">Henning Brauer</a> from the OpenBSD team (thanks Henning!) and doing some further research, I have decided to remove it as it deals with very specific corner cases (please see the documentation). You only need the <code>scrub</code> rule if a host on your network generates fragmented packets with the "dont‑fragment" flag set. The default PF behavior without the <code>scrub</code> rule is better suited for general usage.</p>
@@ -430,7 +430,7 @@ block drop in quick inet from 192.168.2.1 to any
 block drop in quick on ! em3 inet from 192.168.3.0/24 to any
 block drop in quick inet from 192.168.3.1 to any
 </pre>
-<p>If we take, e.g., the <code>em1</code> NIC rule <code>block drop in quick on ! em1 inet from 192.168.1.0/24 to any</code> then that means: <i>block any traffic from the network with IP addresses ranging from 192.168.1.1 to 192.168.1.255, that doesn't originate from the em1 interface itself, and that is going anywhere</i>. Since the <code>em1</code> interface is the NIC in charge of all IP addresses in that specific range, then no traffic with such an IP address should originate from any other NIC.</p>
+<p>If we take, e.g., the <code>em1</code> NIC rule <code>block drop in quick on ! em1 inet from 192.168.1.0/24 to any</code> then that means: <i>block any traffic from the network with IP addresses ranging from 192.168.1.1 to 192.168.1.255, that doesn't originate from the em1 NIC itself, and that is going anywhere</i>. Since the <code>em1</code> NIC is the NIC in charge of all IP addresses in that specific range, then no traffic with such an IP address should originate from any other NIC.</p>
 <p class="info info-red" style="font-size:initial;"><b>WARNING:</b><br>Usage of <code>antispoof</code> should be <b>restricted</b> to interfaces that have been assigned an IP address, meaning that if you have unused NICs, or ports on a NIC, make sure to assign an IP address to each or don't include these in the <code>antispoof</code> option.</p>
 <p>As mentioned, I have removed the <code>antispoof</code> rule and we are instead using a strict uRPF check. When a packet is run through the uRPF check, the source IP address of the packet is looked up in the routing table. If the outbound interface is found in the routing table and the entry is the same as the interface that the packet just came in on, then the uRPF check passes. Otherwise it's possible that the packet has had its source address spoofed and it is blocked.</p>
 <p>The IP addresses in the <code>martians</code> macro constitutes the <a href="https://tools.ietf.org/html/rfc1918">RFC1918</a> addresses which are not to be used on the Internet. Traffic to and from such addresses is dropped on the routers external interface.</p>
@@ -508,7 +508,7 @@ pass out on $p_lan inet keep state
 # so we explicitly block for that last.
 block drop in on $p_lan to { $g_lan:network $c_lan:network }
 </pre>
-<p>Now we come to the network address translation (NAT). This is where the router routes packages from one segment of the network to another, in this specific case from our internal network to the Internet outside, and then any reply coming from the Internet outside, back in to the originator of the transmission. I prefer the <code>:network</code> parameter, which translates to the network(s) attached to the interface, and I prefer to be specific with one rule for each relevant segment.</p>
+<p>Now we come to the network address translation (NAT). This is where the router routes packages from one segment of the network to another, in this specific case from our internal network to the Internet outside, and then any reply coming from the Internet outside, back in to the originator of the transmission. I prefer the <code>:network</code> parameter, which translates to the network(s) attached to the NIC, and I prefer to be specific with one rule for each relevant segment.</p>
 <pre>#---------------------------------#
 # NAT
 #---------------------------------#
@@ -517,7 +517,7 @@ pass out on $ext_if inet from $g_lan:network to any nat-to ($ext_if)
 pass out on $ext_if inet from $c_lan:network to any nat-to ($ext_if)
 pass out on $ext_if inet from $p_lan:network to any nat-to ($ext_if)
 </pre>
-<p>PF will keep a track of all traffic and when, e.g., a web browser on the grown-ups LAN requests a web page on some website on the Internet, the response from the web server on the Internet gets routed through our external interface through to our internal grown-ups LAN interface and then straight to the PC that originated the request.</p>
+<p>PF will keep a track of all traffic and when, e.g., a web browser on the grown-ups LAN requests a web page on some website on the Internet, the response from the web server on the Internet gets routed through our external NIC through to our internal grown-ups LAN NIC and then straight to the PC that originated the request.</p>
 <p>Last we get to the redirecting part of our ruleset. This is where we allow traffic from the Internet outside in to our publicly facing web server on the public LAN. You should, of course, leave this part out if you don't have any publicly facing servers that requires redirection. In this example I'm only allowing IPv4 traffic.</p>
 <pre>#---------------------------------#
 # Redirects
@@ -613,7 +613,7 @@ block return in quick on $c_lan proto { udp tcp} to ! $c_lan port { 53 853 }
 <pre><b># pfctl -s rules</b></pre>
 
 <h3 id="logging">Logging and monitoring</h3>
-<p>This is an example output from the PF log of blocked attempts to access the external interface on a setup of mine. I have cleaned out the output a bit and removed some specific data, and 0.0.0.0 is of course not my public IP address, but you already knew that right ;)</p>
+<p>This is an example output from the PF log of blocked attempts to access the external NIC on a setup of mine. I have cleaned out the output a bit and removed some specific data, and 0.0.0.0 is of course not my public IP address, but you already knew that right ;)</p>
 <pre>
 <code class="command"># tcpdump -n -e -ttt -r /var/log/pflog</code>
 23:11:12 rule 14/(match) block in on em0: 45.129.33.4.45980 &gt; 0.0.0.0.3422: S 1501043655:1501043655(0) win 1024
@@ -889,7 +889,7 @@ log-time-ascii: yes
 <pre># <b>rcctl restart unbound</b></pre>
 <p>In the settings above I have allowed Unbound to listen on the loopback interface (127.0.0.1) in order for local network applications to be able to do lookups if needed. In <code>/etc/resolv.conf</code> on our OpenBSD router I have listed our Unbound DNS server as I don't want anything on the router to query ISP DNS servers:</p>
 <pre>nameserver 127.0.0.1</pre>
-<p>If you are using DHCP on the external interface (the interface connected to your ISP modem or router) you need to make sure that <a href="https://man.openbsd.org/dhclient">dhclient</a> doesn't change <code>/etc/resolv.conf</code>. Edit <code>/etc/dhclient.conf</code> and add:</p>
+<p>If you are using DHCP on the external NIC (the interface connected to your ISP modem or router) you need to make sure that <a href="https://man.openbsd.org/dhclient">dhclient</a> doesn't change <code>/etc/resolv.conf</code>. Edit <code>/etc/dhclient.conf</code> and add:</p>
 <pre>supersede domain-name-servers 127.0.0.1;</pre>
 <p>This will make sure that we only have our local DNS server listed.</p>
 <p>Enable Unbound with:</p>
@@ -1090,7 +1090,7 @@ Address: 2620:0:862:ed1a::1
 
 <h3 id="inspecting-doh">Inspecting DNS over HTTPS (DoH)</h3>
 <p>I want to illustrate the fact that DoH doesn't really provide any true privacy as both the source IP address and the destination IP address can be seen clearly in the HTTPS communication.</p>
-<p>First I have made sure that DoH is disabled in Firefox, on one of the computers on the grown-ups LAN, and are monitoring traffic on the <code>em1</code> interface with the usage of <a href="https://man.openbsd.org/tcpdump">tcpdump</a>. I have also enabled the log file on Unbound, just to avoid filling up syslog with too much DNS noise, and I am using <a href="https://man.openbsd.org/tail">tail</a> to monitor the log.</p>
+<p>First I have made sure that DoH is disabled in Firefox, on one of the computers on the grown-ups LAN, and are monitoring traffic on the <code>em1</code> NIC with the usage of <a href="https://man.openbsd.org/tcpdump">tcpdump</a>. I have also enabled the log file on Unbound, just to avoid filling up syslog with too much DNS noise, and I am using <a href="https://man.openbsd.org/tail">tail</a> to monitor the log.</p>
 <p>I'll head over to "wikipedia.org" in the browser and then see what the surveillance on the router reveals.</p>
 <pre><b># tcpdump -n -i em1 src host 192.168.1.5 and not arp</b>
 tcpdump: listening on em1, link-type EN10MB
