@@ -17,7 +17,7 @@
         <td>
             <h1 class="title">OpenBSD Router Guide</h1>
             <h4>Network segmenting firewall, DHCP, DNS with Unbound, domain blocking and much more<br>
-                <span style="font-size:x-small;font-weight:initial;">OpenBSD: 6.8 · Published: 2020-11-05 · Updated: 2021-04-19 · Version: 1.8.1</span>
+                <span style="font-size:x-small;font-weight:initial;">OpenBSD: 6.8 · Published: 2020-11-05 · Updated: 2021-04-19 · Version: 1.9.0</span>
             </h4>
         </td>
     </tr>
@@ -406,10 +406,10 @@ match in on $ext_if inet proto icmp icmp-type {echoreq } tag ICMP_IN
 block drop in on $ext_if proto icmp
 pass in proto icmp tagged ICMP_IN max-pkt-rate 100/10
 
-# Default allow all NICs to pass out data through the Ethernet port.
-pass out inet
+# We need the router to have access to the Internet.
+# So default allow data to pass out through the external interface.
+pass out inet from $ext_if
 </pre>
-<p class="info info-blue" style="font-size:initial;"><b>NOTE:</b><br>Please note that the <code>pass out inet</code> does not allow traffic to "jump" between interfaces. The interfaces have been protected against spoofing in <code>block in quick from urpf-failed</code>. What <code>pass out inet</code> is doing is allowing traffic to go from each interface to what ever computers are attached to it.</p>
 <p>In previous versions of this guide (before version 1.5.0) I used to have the <a href="https://man.openbsd.org/pf.conf#Scrub">scrub</a> statement present in the setup above, however after having consulted with <a href="http://henningbrauer.com/">Henning Brauer</a> from the OpenBSD team (thanks Henning!) and doing some further research, I have decided to remove it as it deals with very specific corner cases (please see the documentation). You only need the <code>scrub</code> rule if a host on your network generates fragmented packets with the "dont‑fragment" flag set. The default PF behavior without the <code>scrub</code> rule is better suited for general usage.</p>
 <p>The OpenBSD <a href="https://www.openbsd.org/faq/pf/example1.html">FAQ</a> contains an example setup for a very basic router, with some specific values for <code>scrub</code>, but my recommendation is to only use <code>scrub</code> when you know for a fact that you need it. If you do need it, insert it into the configuration after the <code>set skip</code> rule for the loopback interface, like this:</p>
 <pre>set skip on lo0
@@ -443,12 +443,6 @@ block drop in quick inet from 192.168.3.1 to any
 </ul>
 <p>In the above setup we allow ICMP, but put a "rate limit" on the number of ping requests the router will answer. With the <code>max-pkt-rate 100/10</code> modifier the router will stop responding to pings if we get a more than a 100 pings in 10 seconds.</p>
 <p>Should you still want to completely block ICMP for some reason, simply remove the 3 rules after the "Allow ICMP" comment.</p>
-<p>Last, but not least, in the above setup the segmented LANs are default blocked between each other, as mentioned. This means that any machines located on <code>$p_lan</code> cannot reach machines located on <code>$c_lan</code>, etc.</p>
-<p>If you need machines on one segment to reach machines on another segment, you need to explicitly open up for that like this:</p>
-<pre>pass out inet from $g_lan:network to $c_lan:network
-pass out inet from $g_lan:network to $p_lan:network
-</pre>
-<p>In this case we allow for machines on the <code>$g_lan</code> to reach machines on both <code>$c_lan</code> and <code>$p_lan</code>. This can be beneficial if you need to log in remotely a machine on the public LAN or the childrens LAN.</p>
 <p>Now we get to the LAN segment for the grown-ups in the house.</p>
 <pre>#---------------------------------#
 # Grown-ups LAN Setup
@@ -463,6 +457,11 @@ block return in quick on $g_lan proto { udp tcp } to ! $g_lan port { 53 853 }
 
 # Block the network printer from "phoning home".
 block in quick on $g_lan from 192.168.1.8
+
+# Allow data to pass out through the NIC.
+# This also means that machines on the grown-ups LAN can reach machines on the
+# other segments.
+pass out on $g_lan inet keep state
 </pre>
 <p>In this example we have a network printer attached to the grown-ups network that we don't want to access the Internet or anywhere else, just in case it has some kind of spying firmware. We do that by saying, <i>block all data coming in on em1 from the IP address 192.168.1.8 going to any IP address</i>.</p>
 <p>Also we make sure that all DNS requests on port 53 (regular DNS) and 853 (DNS over TLS) are always blocked if they are not addressed to our DNS server.</p>
@@ -479,6 +478,10 @@ pass in on $c_lan
 
 # Always block DNS queries not addressed to our DNS server.
 block return in quick on $c_lan proto { udp tcp} to ! $c_lan port { 53 853 }
+
+# If you want to open completely up for the childrens LAN to reach the Internet
+# and the other segments you need to uncomment the following.
+#pass out on $c_lan inet keep state
 </pre>
 <p>Then we get to the LAN with a publicly facing web server. Since we have a publicly facing web server we set up a couple of restrictions. Should the web server ever get compromised the intruder will have a hard time figuring out what else is located on our internal network.</p>
 <p>We block all access except for DHCP, in order for the web server to get an IP address from our router, and then <b>only manually</b> open other things up whenever we need to update the machine or do something else. I have commented out the options we need, when we need to open things up, leaving the restricting parts enabled. When you need to update the server you open up for DNS and general access to the Internet.</p>
@@ -490,16 +493,20 @@ block return in quick on $c_lan proto { udp tcp} to ! $c_lan port { 53 853 }
 # Allow access to DHCP.
 pass in on $p_lan inet proto udp from any port 67
 
-# Allow access to the Internet by removing the comment.
-# Useful when a machine needs to be updated.
-# pass in on $p_lan inet
-
 # Always block DNS queries not addressed to our DNS server.
 block return in quick on $p_lan proto { udp tcp} to ! $p_lan port { 53 853 }
 
 # If we run any server on the public LAN NIC, then that has to be able to
 # pass out data.
 pass out on $p_lan inet keep state
+
+# When/if you want any server running on the public LAN to access the Internet
+# uncomment to open up.
+#pass in on $p_lan inet
+
+# We do not want this segment to reach any of the other segments no matter what,
+# so we explicitly block for that last.
+block drop in on $p_lan to { $g_lan:network $c_lan:network }
 </pre>
 <p>Now we come to the network address translation (NAT). This is where the router routes packages from one segment of the network to another, in this specific case from our internal network to the Internet outside, and then any reply coming from the Internet outside, back in to the originator of the transmission. I prefer the <code>:network</code> parameter, which translates to the network(s) attached to the interface, and I prefer to be specific with one rule for each relevant segment.</p>
 <pre>#---------------------------------#
@@ -524,7 +531,7 @@ pass in on $ext_if inet proto tcp to $ext_if port { 80 443 } rdr-to 192.168.3.2
 
 <h3 id="whitelist">The children's whitelist</h3>
 <p>If you want to block the entire Internet for the children, except for perhaps a few websites or perhaps a few game servers, you need to figure out what the IP addresses of those services are and create a whitelist using those IP addresses.</p>
-<p>If it is a single website with a single IP address it is very easy and you can do it with this rule placed last in the children's block (you need to replace the x.x.x.x part with the relevant IP address):</p>
+<p>If it is a single website with a single IP address it is very easy and you can do it with this rule placed last in the children's section (you need to replace the x.x.x.x part with the relevant IP address):</p>
 <pre>#---------------------------------#
 # Children's LAN Setup
 #---------------------------------#
