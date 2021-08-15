@@ -17,7 +17,7 @@
         <td>
             <h1 class="title">OpenBSD Router Guide</h1>
             <h4>Network segmenting firewall, DHCP, DNS with Unbound, domain blocking and much more<br>
-                <span style="font-size:x-small;font-weight:initial;">OpenBSD: 6.9 · Published: 2020-11-05 · Updated: 2021-08-02 · Version: 1.9.5</span>
+                <span style="font-size:x-small;font-weight:initial;">OpenBSD: 6.9 · Published: 2020-11-05 · Updated: 2021-08-16 · Version: 2.0.0</span>
             </h4>
         </td>
     </tr>
@@ -1537,11 +1537,11 @@ foo.example.com has address 192.168.1.7</pre>
 <pre><b>$ host foo</b>
 foo.example.com has address 192.168.1.7</pre>
 
-<p>Some people recommend that you register a domain name and then use that internally on your LAN, and while that certainly works, it is not necessary at all. For home usage you can use the TLDs <code>.intranet</code>, <code>.home</code> or <code>.lan</code> according to the <a href="https://tools.ietf.org/html/rfc6762#appendix-G">RFC 6762</a> without any problems. However, don't use <code>.local</code>.</p>
+<p>Some people recommend that you register a domain name and then use that internally on your LAN, and while that certainly works, it is not necessary at all. According to the <a href="https://www.rfc-editor.org/rfc/rfc8375.html">RFC 8375</a> you should use the <code>.home.arpa</code> domain as this is meant to be used inside a small network, such as a home network.</p>
 
 <p>Let's start by making some changes to the <code>/etc/dhcpd.conf</code> configuration. Just to make it simple I'll only use the web server from the public LAN example, but you can expand this to any segment you like and you can also use this across segments if needed.</p>
 
-<p>In our current setup we already have the domain <code>example.com</code> attached to the web server so we can just use that. But if you don't have a public facing server that needs a real domain name, just change it to something like <code>net.home</code>. I have changed the name of our web server to "lilo" (yes, from Lilo &amp; Stitch, because it's way more cool that Luke or Yoda!).</p>
+<p>In our current setup we already have the domain <code>example.com</code> attached to the web server so we can just use that. But if you don't have a public facing server that needs a real domain name, just change it to <code>home.arpa</code>. I have changed the name of our web server to "lilo" (yes, from Lilo &amp; Stitch, because it's way more cool that Luke or Yoda!).</p>
 
 <pre>subnet 192.168.1.0 netmask 255.255.255.0 {
     option domain-name-servers 192.168.1.1;
@@ -1567,28 +1567,28 @@ subnet 192.168.3.0 netmask 255.255.255.0 {
     }
 }</pre>
 
-<p>If you prefer to use multiple domains rather than just one, say like <code>example.com</code> for your professional web development, and then <code>net.home</code> for your private LAN, you can use a <a href="https://en.wikipedia.org/wiki/Search_domain">search domain</a> with the <code>domain-search</code> option in <code>/etc/dhcpd.conf</code> instead of the <code>domain-name</code> option. The difference between the two is that with <code>domain-name</code> only a single domain is appended, but with the <code>domain-search</code> option, multiple domains can be added and they are then "searched" one by one until the host is found.</p>
+<p>If you prefer to use multiple domains rather than just one, say like <code>example.com</code> for your professional web development, and then <code>home.arpa</code> for your private LAN, you can use a <a href="https://en.wikipedia.org/wiki/Search_domain">search domain</a> with the <code>domain-search</code> option in <code>/etc/dhcpd.conf</code> instead of the <code>domain-name</code> option. The difference between the two is that with <code>domain-name</code> only a single domain is appended, but with the <code>domain-search</code> option, multiple domains can be added and they are then "searched" one by one until the host is found.</p>
 
 <p>The <code>domain-search</code> option looks like this:</p>
 
-<pre>option domain-search "example.com", "net.home"</pre>
+<pre>option domain-search "example.com", "home.arpa"</pre>
 
 <p>Then we need to setup Unbound to handle our fixed IP addresses. In this example we only have the web server, but you can use as many hosts as you need. You can just edit the main configuration file for Unbound, but I prefer to put this into a separate file and then include that from the main file. Create a new file called something like <code>/var/unbound/etc/unbound-local.conf</code> and setup your hosts:</p>
 
 <pre>local-data: "lilo.example.com IN A 192.168.3.2"
 local-data-ptr: "192.168.3.2 lilo.example.com"</pre>
 
-<p>Or if you use the <code>.net.home</code> version:</p>
+<p>Or if you use the <code>home.arpa</code> version:</p>
 
-<pre>local-data: "lilo.net.home IN A 192.168.3.2"
-local-data-ptr: "192.168.3.2 lilo.net.home"</pre>
+<pre>local-data: "lilo.home.arpa IN A 192.168.3.2"
+local-data-ptr: "192.168.3.2 lilo.home.arpa"</pre>
 
 <p>Notice how the IP address in the <code>local-data-ptr</code> field is backwards, that is not by mistake.</p>
 
 <p>Then add the following to our <code>/var/unbound/etc/unbound.conf</code>:</p>
 
 <pre>private-address: 192.168.0.0/16
-private-domain: example.com # Use net.home instead if you need that.
+private-domain: example.com # Use home.arpa instead if you need that.
 include: "/var/unbound/etc/unbound-local.conf"</pre>
 
 <p>Restart dhcpd and Unbound:</p>
