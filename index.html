@@ -17,7 +17,7 @@
         <td>
             <h1 class="title">OpenBSD Router Guide</h1>
             <h4>Network segmenting firewall, DHCP, DNS with Unbound, domain blocking and much more<br>
-                <span style="font-size:x-small;font-weight:initial;">OpenBSD: 6.9 · Published: 2020-11-05 · Updated: 2021-08-16 · Version: 2.0.0</span>
+                <span style="font-size:x-small;font-weight:initial;">OpenBSD: 6.9 · Published: 2020-11-05 · Updated: 2021-08-20 · Version: 2.0.1</span>
             </h4>
         </td>
     </tr>
@@ -1610,6 +1610,10 @@ nameserver 192.168.1.1</pre>
 <p>pf-badhost is a lightweight security script made by <a href="https://www.geoghegan.ca/about.html">Jordan Geoghegan</a> that blocks many of the internet's biggest irritants. Annoyances such as SSH and SMTP bruteforcers are largely eliminated by the script.</p>
 
 <p>pf-badhost periodically pulls IP addresses from well-known spammer-IPs databases, such as Spamhaus, Firehol, Emerging Threats and Binary Defense, where bad IP addresses are frequently logged. pf-badhost then adds the collected IP addresses to the PF firewall as a table that is default blocked.</p>
+
+<h3 id="unbound-adblock">unbound-adblock</h3>
+
+<p><a href="https://www.geoghegan.ca/unbound-adblock.html">unbound-adblock</a> is another script made by <a href="https://www.geoghegan.ca/about.html">Jordan Geoghegan</a> that allows you to block online advertisements networks. You can use unbound-adblock as an alternative to my <a href="https://codeberg.org/unixsheikh/dnsblockbuster">DNSBlockBuster</a> if you prefer that.</p>
 
 <h3 id="recommended-reading">Recommended reading</h3>
 <ul>
