@@ -17,7 +17,7 @@
         <td>
             <h1 class="title">OpenBSD Router Guide</h1>
             <h4>Network segmenting firewall, DHCP, DNS with Unbound, domain blocking and much more<br>
-                <span style="font-size:x-small;font-weight:initial;">OpenBSD: 7.0 · Published: 2020-11-05 · Updated: 2021-10-16 · Version: 2.0.4</span>
+                <span style="font-size:x-small;font-weight:initial;">OpenBSD: 7.0 · Published: 2020-11-05 · Updated: 2021-11-19 · Version: 2.0.5</span>
             </h4>
         </td>
     </tr>
@@ -1232,9 +1232,15 @@ serve-expired: yes</pre>
 
 <p>Take a look at the <a href="https://codeberg.org/unixsheikh/dnsblockbuster#user-content-usage">Usage</a> section in the documentation for DNSBlockBuster on how to use it. It's easy and simple.</p>
 
-<p>Once you have created your block list for Unbound place it in <code>/var/unbound/etc/</code>, then edit the Unbound configuration file <code>/var/unbound/etc/unbound.conf</code> and insert the following somewhere:</p>
+<p>Once you have created your block list for Unbound place it in <code>/var/unbound/etc/</code>, then edit the Unbound configuration file <code>/var/unbound/etc/unbound.conf</code> and insert the following somewhere in the <code>server</code> section (before the <code>remote-control</code> section) of the configuration file:</p>
 
-<pre>include: "/var/unbound/etc/unbound-blocked-hosts.conf"</pre>
+<pre>
+include: "/var/unbound/etc/unbound-blocked-hosts.conf"
+
+# Enable the usage of the unbound-control command.
+remote-control:
+    control-enable: yes
+    control-interface: /var/run/unbound.sock</pre>
 
 <p>Now reload Unbound with:</p>
 
