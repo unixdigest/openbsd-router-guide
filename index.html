@@ -1152,9 +1152,9 @@ log-time-ascii: yes</pre>
 
 <pre>nameserver 127.0.0.1</pre>
 
-<p>If you are using DHCP the get an IP address on the external NIC (the interface connected to your ISP modem or router) you need to make sure that <a href="https://man.openbsd.org/dhclient">dhclient</a> doesn't change <code>/etc/resolv.conf</code>. Edit <code>/etc/dhclient.conf</code> and add:</p>
+<p>If you are using DHCP the get an IP address on the external NIC (the interface connected to your ISP modem or router) you need to make sure that <a href="https://man.openbsd.org/dhcpleased">dhcpleased</a> doesn't change <code>/etc/resolv.conf</code>. Edit <code>/etc/dhcpleased.conf</code> and add:</p>
 
-<pre>supersede domain-name-servers 127.0.0.1;</pre>
+<pre>interface em0 { ignore dns }</pre>
 
 <p>This will make sure that we only have our local DNS server listed.</p>
 
