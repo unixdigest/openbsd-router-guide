@@ -17,7 +17,7 @@
         <td>
             <h1 class="title">OpenBSD Router Guide</h1>
             <h4>Network segmenting firewall, DHCP, DNS with Unbound, domain blocking and much more<br>
-                <span style="font-size:x-small;font-weight:initial;">OpenBSD: 7.0 · Published: 2020-11-05 · Updated: 2022-02-16 · Version: 2.1.0</span>
+                <span style="font-size:x-small;font-weight:initial;">OpenBSD: 7.0 · Published: 2020-11-05 · Updated: 2022-03-24 · Version: 2.1.1</span>
             </h4>
         </td>
     </tr>
@@ -46,7 +46,7 @@
         <li><a href="#pf-domain-name-resolution">Domain name or hostname resolution</a></li>
         <li><a href="#the-ruleset">The ruleset</a>
             <ul>
-                <li><a href="#whitelist">The children's whitelist</a>
+                <li><a href="#passlist">The children's pass list</a>
                     <ul>
                         <li><a href="#persistent-table">Using a persistent table</a></li>
                     </ul>
@@ -173,7 +173,7 @@
 
 <p>In this tutorial we're building a router and we have 4 networks of the same type to work with. One is the Internet and the other three are the internally segmented local area networks (LANs). Some people prefer to work with virtual LANs, but in this tutorial we're going to use the quad port NIC from the illustration above. You can achieve the same result by using multiple one port NICs if you prefer that, you just have to make sure that you have enough room and free PCI slots on the motherboard. You can also use the Ethernet port on the motherboard itself, but it depends on the driver and support for the device. I have had no problems using the Realtek PCI gigabit Ethernet controller that normally comes with many motherboards even though I recommend Intel over Realtek.</p>
 
-<p>Of course you don't have to segment the network into several parts if you don't need that, and it will be very easy to change the settings from this guide, but I have decided to use this approach in order to show you how you can protect your children by segmenting their network into a separate LAN that not only gets ad and porn blocking using DNS blocking (all the segments gets that), but you can even whitelist the parts of the Internet you want them to have access to. The last part about whitelisting is difficult and generally not recommended unless your children requires only very limited access, but it is doable with some work, and the guide is going to show you one way you can do that.</p>
+<p>Of course you don't have to segment the network into several parts if you don't need that, and it will be very easy to change the settings from this guide, but I have decided to use this approach in order to show you how you can protect your children by segmenting their network into a separate LAN that not only gets ad and porn blocking using DNS blocking (all the segments gets that), but you can even make a pass list that passes only the parts of the Internet you want them to have access to. The last part about a pass list is difficult and generally not recommended unless your children requires only very limited access, but it is doable with some work, and the guide is going to show you one way you can do that.</p>
 
 <p>This is an illustration of the network we're going to setup:</p>
 
@@ -621,7 +621,7 @@ block return in quick on $c_lan proto { udp tcp} to ! $c_lan port { 53 853 }
 # the router itself.
 pass out on $c_lan inet keep state</pre>
 
-<p>Currently both the grown-ups and the children have the same access to the Internet. A more restricted setup is mentioned in the <a href="#whitelist">childrens whitelist</a> section.</p>
+<p>Currently both the grown-ups and the children have the same access to the Internet. A more restricted setup is mentioned in the <a href="#passlist">childrens pass list</a> section.</p>
 
 <p>Then we get to the DMZ, i.e. the NIC with a publicly facing web server. Since we have a publicly facing web server we set up a couple of restrictions. Should the web server ever get compromised the intruder will have a hard time figuring out what else is located on our internal network.</p>
 
@@ -697,9 +697,9 @@ pass in on $ext_if inet proto tcp to $ext_if port { 80 443 } rdr-to 192.168.3.2<
 
 <p>That's it for our basic setup of firewall rules.</p>
 
-<h3 id="whitelist">The childrens whitelist</h3>
+<h3 id="passlist">The childrens pass list</h3>
 
-<p>If you want to block the entire Internet for the children with the exception of a few websites or perhaps a few game servers, you need to figure out what the IP addresses of those services are and create a whitelist using those IP addresses.</p>
+<p>If you want to block the entire Internet for the children with the exception of a few websites or perhaps a few game servers, you need to figure out what the IP addresses of those services are and create a pass list using those IP addresses.</p>
 
 <p>If it is a single website with a single IP address it is very easy and you can do it with this rule placed last in the childrens section (you need to replace the x.x.x.x part with the relevant IP address):</p>
 
@@ -724,7 +724,7 @@ pass in on $c_lan to x.x.x.x</pre>
 
 <p>If the website has multiple IP addresses you need to figure out what those are. Sometimes a domain name lookup can reveal all the relevant IP addresses at once, such as <code>$ dig example.com ANY</code> or <code>drill example.com ANY</code>. At other times you need to repeat the lookup multiple times at different intervals in the day in order to get the full range of IP addresses. You can also do that by setting up an automated script.</p>
 
-<p>Sometimes you may need to contact the relevant company and ask if you can get the IP range for your whitelist (some companies keep the information public, others refuse to release the information out of fear for malicious usage). Once you have determined what the IP range is you can put those into a PF <code>table</code> and then use that.</p>
+<p>Sometimes you may need to contact the relevant company and ask if you can get the IP range for your pass list (some companies keep the information public, others refuse to release the information out of fear for malicious usage). Once you have determined what the IP range is you can put those into a PF <code>table</code> and then use that.</p>
 
 <p>In this example we add a new table to the table section of the rules and then change the settings in the childrens rules.</p>
 <pre>#---------------------------------#
@@ -734,7 +734,7 @@ pass in on $c_lan to x.x.x.x</pre>
 ...
 
 # Whitelist for the children.
-table &lt;whitelist&gt; { x.x.x.x y.y.y.y z.z.z.z }</pre>
+table &lt;passlist&gt; { x.x.x.x y.y.y.y z.z.z.z }</pre>
 
 <p>And then in the childrens section change:</p>
 
@@ -742,35 +742,35 @@ table &lt;whitelist&gt; { x.x.x.x y.y.y.y z.z.z.z }</pre>
 
 <p>to:</p>
 
-<pre>pass in on $c_lan to &lt;whitelist&gt;</pre>
+<pre>pass in on $c_lan to &lt;passlist&gt;</pre>
 
-<p>It is not always possible to get all the needed IP addresses into a whitelist all at once, but by monitoring the network, using e.g. <a href="https://man.openbsd.org/tcpdump">tcpdump</a>, when the game is trying to access a server, you can put together a working list, bit by bit. I have managed to do it with Mojang login servers and Minecraft servers and multiple other games.</p>
+<p>It is not always possible to get all the needed IP addresses into a pass list all at once, but by monitoring the network, using e.g. <a href="https://man.openbsd.org/tcpdump">tcpdump</a>, when the game is trying to access a server, you can put together a working list, bit by bit. I have managed to do it with Mojang login servers and Minecraft servers and multiple other games.</p>
 
 <h4 id="persistent-table">Using a persistent table</h4>
 
-<p>Another approach to IP collecting for a whitelist is to use a <a href="https://man.openbsd.org/pf.conf#TABLES">persistent table</a> in combination with <code>/etc/rc.local</code> and domain name lookups. <code>/etc/rc.local</code> is only run <b>after</b> PF is started and as such problems with domain name resolving will not cause PF any problems.</p>
+<p>Another approach to IP collecting for a pass list is to use a <a href="https://man.openbsd.org/pf.conf#TABLES">persistent table</a> in combination with <code>/etc/rc.local</code> and domain name lookups. <code>/etc/rc.local</code> is only run <b>after</b> PF is started and as such problems with domain name resolving will not cause PF any problems.</p>
 
 <p>Should you want to run with the persistent table solution you can do it by adding a persistent table to the table section in <code>/etc/pf.conf</code>:</p>
 
-<pre>table &lt;whitelist&gt; persist</pre>
+<pre>table &lt;passlist&gt; persist</pre>
 
-<p>In the childrens section you still need to pass data in that goes to the whitelist like in the above:</p>
+<p>In the childrens section you still need to pass data in that goes to the pass list like in the above:</p>
 
-<pre>pass in on $c_lan to &lt;whitelist&gt;</pre>
+<pre>pass in on $c_lan to &lt;passlist&gt;</pre>
 
 <p>Then in <code>/etc/rc.local</code> you can add the following command:</p>
 
-<pre>pfctl -t whitelist -T add example.com</pre>
+<pre>pfctl -t passlist -T add example.com</pre>
 
 <p>Where <code>example.com</code> is the domain you want PF to lookup.</p>
 
 <p>Whenever your kids cannot get access because the valid IP addresses might have changed, you can login to the firewall and then manually update the table with more IP addresses by running the command manually:</p>
 
-<pre><b># pfctl -t whitelist -T add examples.com</b></pre>
+<pre><b># pfctl -t passlist -T add examples.com</b></pre>
 
 <p>If you want to see what IP addresses have been added to the list you can do it with:</p>
 
-<pre><b># pfctl -t whitelist -T show</b>
+<pre><b># pfctl -t passlist -T show</b>
 74.6.143.25
 74.6.143.26
 74.6.231.20
@@ -789,7 +789,7 @@ table &lt;whitelist&gt; { x.x.x.x y.y.y.y z.z.z.z }</pre>
 
 <p>Eventually you can add all the IP addresses you collect (before they get flushed) into a physical file as the <code>persist</code> option can take input from a file as well:</p>
 
-<pre>table &lt;whitelist&gt; persist file "/etc/pf-whitelist.txt"</pre>
+<pre>table &lt;passlist&gt; persist file "/etc/pf-passlist.txt"</pre>
 
 <p class="info info-blue" style="font-size:initial;"><b>NOTE:</b> The file will not get IP addresses added using the <code>add</code> option to <code>pfctl</code>. A persistent table either resides in memory or on a file, but the <code>add</code> option cannot write to disk, only to memory. A persistent table from a file is one you need to manually edit with a text editor.</p>
 
@@ -1216,7 +1216,7 @@ serve-expired: yes</pre>
 
 <p>I have created a simple shell script called <a href="https://codeberg.org/unixsheikh/dnsblockbuster">DNSBlockBuster</a> that automatically downloads a set of hosts files from various online sources, concatenates them into one, does some cleanup, and then converts the result into a domain block list for both Unbound and dnsmasq. It mainly blocks ads, porn sites and tracking.</p>
 
-<p>With DNSBlockBuster you have the option to create a whitelist, should any of the domains listed in the hosts files be a false positive for you, and you can add your own blacklist in case you want to manually block some domains that aren't listed in the hosts files. You can also easily add new block lists or remove any of the provided block lists.</p>
+<p>With DNSBlockBuster you have the option to create a pass list, should any of the domains listed in the hosts files be a false positive for you, and you can add your own block list in case you want to manually block some domains that aren't listed in the hosts files. You can also easily add new block lists or remove any of the provided block lists.</p>
 
 <p>You don't need to use my script of course, but I will use the script in this tutorial.</p>
 
