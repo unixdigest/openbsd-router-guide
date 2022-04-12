@@ -17,7 +17,7 @@
         <td>
             <h1 class="title">OpenBSD Router Guide</h1>
             <h4>Network segmenting firewall, DHCP, DNS with Unbound, domain blocking and much more<br>
-                <span style="font-size:x-small;font-weight:initial;">OpenBSD: 7.0 · Published: 2020-11-05 · Updated: 2022-04-12 · Version: 2.1.2</span>
+                <span style="font-size:x-small;font-weight:initial;">OpenBSD: 7.0 · Published: 2020-11-05 · Updated: 2022-04-12 · Version: 2.1.3</span>
             </h4>
         </td>
     </tr>
@@ -806,6 +806,8 @@ table &lt;passlist&gt; { x.x.x.x y.y.y.y z.z.z.z }</pre>
 <p>Just as a note, you cannot block access to dhcpd (port 67) via PF because on OpenBSD both <a href="https://man.openbsd.org/dhcpd">dhcpd</a> and dhclient use <a href="https://man.openbsd.org/bpf">bpf</a> by default for receiving and sending packets. This means that the packets are send and received before any filtering is done by PF.</p>
 
 <p>Since bpf provides a raw interface to data link layers in a protocol-independent fashion, all packets on the network, even those destined for other hosts, are accessible through bpf.</p>
+
+<p>See the post <a href="https://misc.openbsd.narkive.com/7SGmbxm0/allow-dhcpd-with-pf">allow dhcpd with pf</a> on the OpenBSD mailing list for relevant comments about this behavior.</p>
 
 <h3 id="logging">Logging and monitoring</h3>
 
