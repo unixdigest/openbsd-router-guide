@@ -17,7 +17,7 @@
         <td>
             <h1 class="title">OpenBSD Router Guide</h1>
             <h4>Network segmenting firewall, DHCP, DNS with Unbound, domain blocking and much more<br>
-                <span style="font-size:x-small;font-weight:initial;">OpenBSD: 7.0 · Published: 2020-11-05 · Updated: 2022-03-24 · Version: 2.1.1</span>
+                <span style="font-size:x-small;font-weight:initial;">OpenBSD: 7.0 · Published: 2020-11-05 · Updated: 2022-04-12 · Version: 2.1.2</span>
             </h4>
         </td>
     </tr>
@@ -55,6 +55,7 @@
         </li>
         <li><a href="#loading-ruleset">Loading the rules</a></li>
         <li><a href="#logging">Logging and monitoring</a></li>
+        <li><a href="#pf-dhcp">Don't try to block dhcp</a></li>
     </ul>
     </li>
     <li><a href="#domain-name-service">DNS</a>
@@ -488,6 +489,7 @@ table &lt;martians&gt; { 0.0.0.0/8 10.0.0.0/8 127.0.0.0/8 169.254.0.0/16     \
 <pre>#---------------------------------#
 # Protect and block by default
 #---------------------------------#
+
 set skip on lo0
 
 # Spoofing protection for all NICs.
@@ -633,10 +635,6 @@ pass out on $c_lan inet keep state</pre>
 # DMZ Setup
 #---------------------------------#
 
-# Allow any computer or device attached to the DMZ NIC to get an IP address
-# from DHCP on the router.
-pass in on $dmz inet proto udp from any port 67
-
 # Allow any computer or device attached to the DMZ NIC to make DNS queries
 # (uncomment if you need it).
 #pass in on $dmz inet proto udp from any port 53
@@ -706,10 +704,6 @@ pass in on $ext_if inet proto tcp to $ext_if port { 80 443 } rdr-to 192.168.3.2<
 <pre>#---------------------------------#
 # Childrens LAN Setup
 #---------------------------------#
-
-# Allow any computer or device attached to the childrens NIC to get an IP
-# address from DHCP on the router.
-pass in on $c_lan inet proto udp from any port 67
 
 # Allow any computer or device attached to the childrens NIC to make DNS
 # queries.
@@ -806,6 +800,12 @@ table &lt;passlist&gt; { x.x.x.x y.y.y.y z.z.z.z }</pre>
 <p>Take a look at the translated result with:</p>
 
 <pre><b># pfctl -s rules</b></pre>
+
+<h3 id="pf-dhcp">Don't try to block dhcp</h3>
+
+<p>Just as a note, you cannot block access to dhcpd (port 67) via PF because on OpenBSD both <a href="https://man.openbsd.org/dhcpd">dhcpd</a> and dhclient use <a href="https://man.openbsd.org/bpf">bpf</a> by default for receiving and sending packets. This means that the packets are send and received before any filtering is done by PF.</p>
+
+<p>Since bpf provides a raw interface to data link layers in a protocol-independent fashion, all packets on the network, even those destined for other hosts, are accessible through bpf.</p>
 
 <h3 id="logging">Logging and monitoring</h3>
 
