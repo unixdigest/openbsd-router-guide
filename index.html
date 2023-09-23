@@ -635,17 +635,19 @@ pass out on $c_lan inet keep state</pre>
 # DMZ Setup
 #---------------------------------#
 
-# Allow any computer or device attached to the DMZ NIC to make DNS queries
-# (uncomment if you need it).
-#pass in on $dmz inet proto udp from any port 53
-
 # Always block DNS queries not addressed to our DNS server on the router.
-block return in quick on $dmz proto { udp tcp} to ! $dmz port { 53 853 }
+block return in quick on $dmz proto { udp tcp } to ! $dmz port { 53 853 }
+
+# Allow any computer or device attached to the DMZ NIC to make DNS queries
+pass in quick on $dmz inet proto { udp tcp } from any to 192.168.3.1 port 53
+
+# Allow any computer or device attached to the DMZ NIC to make DHCP queries
+pass in quick on $dmz inet proto udp from any to 192.168.3.1 port 67
 
 # When you want any computer attached to the DMZ NIC to access the Internet
 # uncomment this to open up for access. This is relevant when you need to
 # upgrade a computer.
-#pass in on $dmz inet
+pass in on $dmz inet
 
 # No matter what, we do not want the DMZ segment to reach any of the other
 # network segments so we explicitly use a block last.
@@ -663,7 +665,10 @@ block return in quick on $dmz proto { udp tcp} to ! $dmz port { 53 853 }
 # This blocks computers on the DMZ NIC from reaching any computers or devices
 # on the other two networking segments.
 block drop in on $dmz to { $g_lan:network $c_lan:network }
-
+#
+# This blocks computers on the DMZ NIC to access the router itself
+block drop in on $dmz from any to self
+#
 # Last, we need to pass out data packets coming from the DMZ NIC to computers
 # attached to it, otherwise nobody can "talk" to them.
 # Without this we cannot even ping computers attached to the DMZ NIC from the
