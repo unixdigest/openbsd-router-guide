@@ -1524,7 +1524,7 @@ block in quick on { $g_lan $c_lan $dmz } to &lt;block_doh&gt;</pre>
 
 <pre><b># pfctl -vvt block_doh -T show</b></pre>
 
-<p>If - after some time - you want to see what IP addresses that actually has been used in a blocking, you can filter the output:</p>
+<p>If - after some time - you want to see what IP addresses that actually have been used in a blocking, you can filter the output:</p>
 
 <pre><b># pfctl -vvt block_doh -T show | awk '/\[/ {p+=$4; b+=$6} END {print p, b}'</b></pre>
 
@@ -1632,7 +1632,7 @@ nameserver 192.168.1.1</pre>
 <h3 id="recommended-reading">Recommended reading</h3>
 <ul>
     <li><a href="https://www.openbsd.org/faq/pf/index.html">OpenBSD PF - User's Guide</a> from the OpenBSD FAQ.</li>
-    <li><a href="https://mwl.io/nonfiction/os#ao2e">Absolute OpenBSD, 2nd Edition</a> by Michael Warren Lucas. Some of the PF syntax has changed since Michael wrote the book, but it is still very useful.</li>
+    <li><a href="https://mwl.io/nonfiction/os#ao2e">Absolute OpenBSD, 2nd Edition</a> by Michael Warren Lucas. Some of the PF syntax have changed since Michael wrote the book, but it is still very useful.</li>
     <li><a href="https://mwl.io/nonfiction/networking#n4sa">Networking for System Administrators</a> by Michael Warren Lucas.</li>
     <li><a href="https://home.nuug.no/~peter/openbsd_and_you/#1">OpenBSD and You</a></li>
     <li><a href="https://blog.apnic.net/2019/11/12/stop-using-ridiculously-low-dns-ttls/">Stop using ridiculously low DNS TTLs</a></li>
