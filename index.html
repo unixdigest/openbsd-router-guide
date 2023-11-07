@@ -17,7 +17,7 @@
         <td>
             <h1 class="title">OpenBSD Router Guide</h1>
             <h4>Network segmenting firewall, DHCP, DNS with Unbound, domain blocking and much more<br>
-                <span style="font-size:x-small;font-weight:initial;">OpenBSD: 7.4 · Published: 2020-11-05 · Updated: 2023-10-18 · Version: 2.1.5</span>
+                <span style="font-size:x-small;font-weight:initial;">OpenBSD: 7.4 · Published: 2020-11-05 · Updated: 2023-11-07 · Version: 2.1.6</span>
             </h4>
         </td>
     </tr>
@@ -55,7 +55,7 @@
         </li>
         <li><a href="#loading-ruleset">Loading the rules</a></li>
         <li><a href="#logging">Logging and monitoring</a></li>
-        <li><a href="#pf-dhcp">Don't try to block dhcp</a></li>
+        <li><a href="#pf-dhcp">Don't try to block DHCP</a></li>
     </ul>
     </li>
     <li><a href="#domain-name-service">DNS</a>
@@ -96,6 +96,7 @@
             <li><a href="#dhcp-domain">Adding the domain-name option to DHCP and using a FQDN</a></li>
             <li><a href="#pf-badhost">Adding pf-badhost</a></li>
             <li><a href="#recommended-reading">Recommended reading</a></li>
+            <li><a href="#relevant-links">Relevant links</a></li>
             <li><a href="#how-to-contribute">How to contribute to the guide?</a></li>
         </ul>
     </li>
@@ -801,7 +802,7 @@ table &lt;passlist&gt; { x.x.x.x y.y.y.y z.z.z.z }</pre>
 
 <pre><b># pfctl -s rules</b></pre>
 
-<h3 id="pf-dhcp">Don't try to block dhcp</h3>
+<h3 id="pf-dhcp">Don't try to block DHCP</h3>
 
 <p>Just as a note, you cannot block access to dhcpd (port 67) via PF because on OpenBSD both <a href="https://man.openbsd.org/dhcpd">dhcpd</a> and dhclient use <a href="https://man.openbsd.org/bpf">bpf</a> by default for receiving and sending packets. This means that the packets are send and received before any filtering is done by PF.</p>
 
@@ -1636,6 +1637,13 @@ nameserver 192.168.1.1</pre>
     <li><a href="https://mwl.io/nonfiction/networking#n4sa">Networking for System Administrators</a> by Michael Warren Lucas.</li>
     <li><a href="https://home.nuug.no/~peter/openbsd_and_you/#1">OpenBSD and You</a></li>
     <li><a href="https://blog.apnic.net/2019/11/12/stop-using-ridiculously-low-dns-ttls/">Stop using ridiculously low DNS TTLs</a></li>
+</ul>
+
+<h3 id="relevant-links">Relevant links</h3>
+<ul>
+    <li><a href="https://github.com/DNSCrypt/dnscrypt-resolvers/blob/master/v3/public-resolvers.md">Extensive list of public DNS resolvers supporting the DNSCrypt and DNS-over-HTTP2 protocols</a></li>
+    <li><a href="https://github.com/curl/curl/wiki/DNS-over-HTTPS">cURL's of publicly available DoH servers</a></li>
+    <li><a href="https://github.com/oneoffdallas/dohservers">Another list of DoH servers</a></li>
 </ul>
 
 <h3 id="how-to-contribute">How to contribute to the guide?</h3>
