@@ -17,7 +17,7 @@
         <td>
             <h1 class="title">OpenBSD Router Guide</h1>
             <h4>Network segmenting firewall, DHCP, DNS with Unbound, domain blocking and much more<br>
-                <span style="font-size:x-small;font-weight:initial;">OpenBSD: 7.4 · Published: 2020-11-05 · Updated: 2023-11-07 · Version: 2.1.6</span>
+                <span style="font-size:x-small;font-weight:initial;">OpenBSD: 7.4 · Published: 2020-11-05 · Updated: 2024-03-02 · Version: 2.1.7</span>
             </h4>
         </td>
     </tr>
@@ -1053,7 +1053,7 @@ PING 0.0.0.0 (127.0.0.1) 56(84) bytes of data.
 
 <p>DoH also completely messes up network analysis and monitoring of DNS traffic for security purposes. In 2019, Godlua, a Linux DDoS bot, was the first <a href="https://en.wikipedia.org/wiki/Malware">malware</a> application seen <a href="https://www.zdnet.com/article/first-ever-malware-strain-spotted-abusing-new-doh-dns-over-https-protocol/">using DoH to hide its DNS traffic</a>.</p>
 
-<p>Furthermore, and perhaps most important, DoH does <strong>not prevent tracking of users</strong>. Some parts of the HTTPS connection are not encrypted, such as <a href="https://en.wikipedia.org/wiki/Server_Name_Indication#Security_implications">SNI fields</a> (it's slowly getting there though), <a href="https://en.wikipedia.org/wiki/Online_Certificate_Status_Protocol">OCSP connections</a>, and of course <b>the destination IP addresses</b>, which in my humble opinion is the most crucial part of the communication that needs to be hidden!</p>
+<p>Furthermore, and perhaps most important, DoH does <strong>not prevent tracking of users</strong>. Some parts of the HTTPS connection are not encrypted, such as <a href="https://en.wikipedia.org/wiki/Server_Name_Indication#Security_implications">SNI fields</a> (it's slowly <a href="https://blog.mozilla.org/security/2018/10/18/encrypted-sni-comes-to-firefox-nightly/">getting there</a> though), <a href="https://en.wikipedia.org/wiki/Online_Certificate_Status_Protocol">OCSP connections</a>, and of course <b>the destination IP addresses</b>, which in my humble opinion is the most crucial part of the communication that needs to be hidden!</p>
 
 <p>People who truly need privacy, like journalists in countries with a privacy compromising policy, cannot trust DoH! The IP address of the destination server cannot be hidden with DoH, even if everything about the traffic itself is encrypted. If someone truly needs to encrypt communication the person needs a completely different strategy than DoH.</p>
 
