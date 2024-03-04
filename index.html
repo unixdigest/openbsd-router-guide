@@ -17,7 +17,7 @@
         <td>
             <h1 class="title">OpenBSD Router Guide</h1>
             <h4>Network segmenting firewall, DHCP, DNS with Unbound, domain blocking and much more<br>
-                <span style="font-size:x-small;font-weight:initial;">OpenBSD: 7.4 · Published: 2020-11-05 · Updated: 2024-03-02 · Version: 2.1.7</span>
+                <span style="font-size:x-small;font-weight:initial;">OpenBSD: 7.4 · Published: 2020-11-05 · Updated: 2024-03-04 · Version: 2.1.8</span>
             </h4>
         </td>
     </tr>
@@ -1495,11 +1495,9 @@ Nov 05 23:30:34 unbound[12636:0] reply: 192.168.1.5 www.wikipedia.org. A IN NOER
 
 <p>Blocking DoH via domain names doesn't make much sense in my humble opinion as a domain name has to be looked up in the first place. Most clients that use DoH has the host IP address for the DoH server encoded directly into the source code.</p>
 
-<p>I have searched multiple sites on the Internet, but haven't found a single up to date list of public DoH servers, so I have decided to make my own list called <a href="https://codeberg.org/unixsheikh/dohblockbuster">DoHBlockBuster</a>. However, this is a tremendous task, something which I know I wont have time to keep updated in the future unless others pitch in, so if you have got some spare time, please help keep the lists updated (either make a pull request or send me an email). Also this list is in no way exhaustive.</p>
+<p>If you don't use IPv6 you can block all outgoing IPv6 traffic and then only use the IPv4 list. Change the <code>pass out</code> parameter, in the "Default protect and block" section of <code>/etc/pf.conf</code>, to <code>pass out inet</code>. That way you only allow outgoing IPv4 traffic and don't need to specifically block IPv6 DoH IP addresses.</p>
 
-<p>If you don't use IPv6 you can block all outgoing IPv6 traffic and then only use the IPv4 list from DoHBlockBuster. Change the <code>pass out</code> parameter, in the "Default protect and block" section of <code>/etc/pf.conf</code>, to <code>pass out inet</code>. That way you only allow outgoing IPv4 traffic and don't need to specifically block IPv6 DoH IP addresses.</p>
-
-<p>Download the lists from <a href="https://codeberg.org/unixsheikh/dohblockbuster">DoHBlockBuster</a> and edit the lists to suit your needs and put them somewhere on disk.</p>
+<p>Download the IP list from <a href="https://github.com/mthcht/awesome-lists/blob/main/Lists/dns_over_https_servers_list.csv">awesome-lists</a> and edit the list to suit your needs and put it somewhere on disk.</p>
 
 <p>I have made a subdirectory <code>/etc/pf-block-lists</code> where I place all IP block lists I need for PF.</p>
 
@@ -1528,8 +1526,6 @@ block in quick on { $g_lan $c_lan $dmz } to &lt;block_doh&gt;</pre>
 <p>If - after some time - you want to see what IP addresses that actually have been used in a blocking, you can filter the output:</p>
 
 <pre><b># pfctl -vvt block_doh -T show | awk '/\[/ {p+=$4; b+=$6} END {print p, b}'</b></pre>
-
-<p>As mentioned previously, this solution doesn't take unknown DoH servers into consideration. Also in order for the list to be effective, it needs to be kept up to date.</p>
 
 <h3 id="dhcp-domain">Adding the domain-name option to DHCP and using a FQDN</h3>
 
