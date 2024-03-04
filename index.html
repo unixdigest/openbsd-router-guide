@@ -1504,11 +1504,11 @@ Nov 05 23:30:34 unbound[12636:0] reply: 192.168.1.5 www.wikipedia.org. A IN NOER
 <p>Then create a persistent file for PF in the "Tables" section of <code>/etc/pf.conf</code>:</p>
 
 <pre># Public DoH servers.
-table &lt;block_doh&gt; persist file "/etc/pf-block-lists/dohblockbuster-ipv4.txt"</pre>
+table &lt;block_doh&gt; persist file "/etc/pf-block-lists/doh-ipv4.txt"</pre>
 
 <p>If you need IPv6 then add that too:</p>
 
-<pre>table &lt;block_doh&gt; persist file "/etc/pf-block-lists/dohblockbuster-ipv4.txt" file "/etc/pf-block-lists/dohblockbuster-ipv6.txt"</pre>
+<pre>table &lt;block_doh&gt; persist file "/etc/pf-block-lists/doh-ipv4.txt" file "/etc/pf-block-lists/doh-ipv6.txt"</pre>
 
 <p>And then add a <code>block</code> to the "Protect and block by default" section of the firewall:</p>
 
