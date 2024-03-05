@@ -17,7 +17,7 @@
         <td>
             <h1 class="title">OpenBSD Router Guide</h1>
             <h4>Network segmenting firewall, DHCP, DNS with Unbound, domain blocking and much more<br>
-                <span style="font-size:x-small;font-weight:initial;">OpenBSD: 7.4 · Published: 2020-11-05 · Updated: 2024-03-04 · Version: 2.1.8</span>
+                <span style="font-size:x-small;font-weight:initial;">OpenBSD: 7.4 · Published: 2020-11-05 · Updated: 2024-03-05 · Version: 2.1.9</span>
             </h4>
         </td>
     </tr>
@@ -155,7 +155,7 @@
 
 <h2 id="why-openbsd">Why OpenBSD?</h2>
 
-<p>In truth, you can get a somewhat similar setup with one of the other <a href="https://en.wikipedia.org/wiki/Comparison_of_BSD_operating_systems">BSD flavors</a> or one of the many different <a href="https://en.wikipedia.org/wiki/Linux_distribution">Linux distribution</a>, but <a href="https://www.openbsd.org/">OpenBSD</a> is specifically very well suited and designed for this kind of task. Not only does it come with all the needed software in the base install, but it also has significantly better security and tons of improved mitigations already build-in into the operating system. I <a href="https://www.unixsheikh.com/articles/openbsd-is-fantastic.html">highly recommend</a> OpenBSD over any other operating system for this kind of task.</p>
+<p>In truth, you can get a somewhat similar setup with one of the other <a href="https://en.wikipedia.org/wiki/Comparison_of_BSD_operating_systems">BSD flavors</a> or one of the many different <a href="https://en.wikipedia.org/wiki/Linux_distribution">Linux distribution</a>, but <a href="https://www.openbsd.org/">OpenBSD</a> is specifically very well suited and designed for this kind of task. Not only does it come with all the needed software in the base install, but it also has significantly better security and tons of improved mitigations already build-in into the operating system. I <a href="https://www.unixsdigest.com/articles/openbsd-is-fantastic.html">highly recommend</a> OpenBSD over any other operating system for this kind of task.</p>
 
 <p>Furthermore, OpenBSD is special, and this is not an exaggeration. The manual pages are very readable and often the only information you need to, more or less, effortless create configuration files for the various services you need. The OpenBSD project has a very high level of quality requirements for both the software and the manual pages.</p>
 
@@ -1217,7 +1217,7 @@ serve-expired: yes</pre>
 
 <p>Now we get to the interesting part about domain blocking.</p>
 
-<p>I have created a simple shell script called <a href="https://codeberg.org/unixsheikh/dnsblockbuster">DNSBlockBuster</a> that automatically downloads a set of hosts files from various online sources, concatenates them into one, does some cleanup, and then converts the result into a domain block list for both Unbound and dnsmasq. It mainly blocks ads, porn sites and tracking.</p>
+<p>I have created a simple shell script called <a href="https://codeberg.org/unixsdigest/dnsblockbuster">DNSBlockBuster</a> that automatically downloads a set of hosts files from various online sources, concatenates them into one, does some cleanup, and then converts the result into a domain block list for both Unbound and dnsmasq. It mainly blocks ads, porn sites and tracking.</p>
 
 <p>With DNSBlockBuster you have the option to create a pass list, should any of the domains listed in the hosts files be a false positive for you, and you can add your own block list in case you want to manually block some domains that aren't listed in the hosts files. You can also easily add new block lists or remove any of the provided block lists.</p>
 
@@ -1233,7 +1233,7 @@ serve-expired: yes</pre>
 
 <pre><b># rcctl restart unbound</b></pre>
 
-<p>Take a look at the <a href="https://codeberg.org/unixsheikh/dnsblockbuster#user-content-usage">Usage</a> section in the documentation for DNSBlockBuster on how to use it. It's easy and simple.</p>
+<p>Take a look at the <a href="https://codeberg.org/unixsdigest/dnsblockbuster#user-content-usage">Usage</a> section in the documentation for DNSBlockBuster on how to use it. It's easy and simple.</p>
 
 <p>Once you have created your block list for Unbound place it in <code>/var/unbound/etc/</code>, then edit the Unbound configuration file <code>/var/unbound/etc/unbound.conf</code> and insert the following somewhere in the <code>server</code> section (before the <code>remote-control</code> section) of the configuration file:</p>
 
@@ -1491,7 +1491,7 @@ Nov 05 23:30:34 unbound[12636:0] reply: 192.168.1.5 www.wikipedia.org. A IN NOER
 
 <h3 id="blocking-doh">Blocking DNS over HTTPS (DoH)</h3>
 
-<p>Previously the <a href="https://codeberg.org/unixsheikh/dnsblockbuster">DNSBlockBuster</a> script already had some DoH domain names in the list, that I had randomly thrown in, but I have since removed DoH blocking from the DNS server as it really needs happen on the firewall level only.</p>
+<p>Previously the <a href="https://codeberg.org/unixdigest/dnsblockbuster">DNSBlockBuster</a> script already had some DoH domain names in the list, that I had randomly thrown in, but I have since removed DoH blocking from the DNS server as it really needs happen on the firewall level only.</p>
 
 <p>Blocking DoH via domain names doesn't make much sense in my humble opinion as a domain name has to be looked up in the first place. Most clients that use DoH has the host IP address for the DoH server encoded directly into the source code.</p>
 
@@ -1624,7 +1624,7 @@ nameserver 192.168.1.1</pre>
 
 <h3 id="unbound-adblock">unbound-adblock</h3>
 
-<p><a href="https://www.geoghegan.ca/unbound-adblock.html">unbound-adblock</a> is another script made by <a href="https://www.geoghegan.ca/about.html">Jordan Geoghegan</a> that allows you to block online advertisements networks. You can use unbound-adblock as an alternative to my <a href="https://codeberg.org/unixsheikh/dnsblockbuster">DNSBlockBuster</a> if you prefer that.</p>
+<p><a href="https://www.geoghegan.ca/unbound-adblock.html">unbound-adblock</a> is another script made by <a href="https://www.geoghegan.ca/about.html">Jordan Geoghegan</a> that allows you to block online advertisements networks. You can use unbound-adblock as an alternative to my <a href="https://codeberg.org/unixdigest/dnsblockbuster">DNSBlockBuster</a> if you prefer that.</p>
 
 <h3 id="recommended-reading">Recommended reading</h3>
 <ul>
@@ -1645,18 +1645,18 @@ nameserver 192.168.1.1</pre>
 <h3 id="how-to-contribute">How to contribute to the guide?</h3>
 <p>Please consider contributing if you have any comments, corrections, or changes you consider appropriate.</p>
 <ul>
-    <li>Clone on <a href="https://github.com/unixsheikh/openbsd-router-guide">GitHub</a></li>
+    <li>Clone on <a href="https://github.com/unixdigest/openbsd-router-guide">GitHub</a></li>
     <li>Submit a pull request for consideration</li>
 </ul>
-<p>You can also just use <a href="https://www.unixsheikh.com/contact.html">email</a> :)</p>
+<p>You can also just use <a href="https://www.unixdigest.com/contact.html">email</a> :)</p>
 <p><b>Please note:</b> I do not accept translations of the guide as it will not be possible for me to make sure that the translation is kept updated or even correct.</p>
 
 </article>
 <footer class="info info-grey" style="text-align:center;">
     <h3>Created and maintained by</h3>
-    <p><a href="https://unixsheikh.com/">Unix Sheikh</a></p>
+    <p><a href="https://unixdigest.com/">Unix Digest</a></p>
     <p>OpenBSD Router Guide is licensed under <a rel="license" href="https://creativecommons.org/licenses/by/4.0/">Creative Commons Attribution 4.0 International License</a>.</p>
-    <p>If you found this content useful consider supporting me on <a href="https://patreon.com/unixsheikh">Patreon</a> :)</p>
+    <p>If you found this content useful consider supporting me on <a href="https://patreon.com/unixdigest">Patreon</a> :)</p>
 </footer>
 </body>
 </html>
