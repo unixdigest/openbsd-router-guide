@@ -155,7 +155,7 @@
 
 <h2 id="why-openbsd">Why OpenBSD?</h2>
 
-<p>In truth, you can get a somewhat similar setup with one of the other <a href="https://en.wikipedia.org/wiki/Comparison_of_BSD_operating_systems">BSD flavors</a> or one of the many different <a href="https://en.wikipedia.org/wiki/Linux_distribution">Linux distribution</a>, but <a href="https://www.openbsd.org/">OpenBSD</a> is specifically very well suited and designed for this kind of task. Not only does it come with all the needed software in the base install, but it also has significantly better security and tons of improved mitigations already build-in into the operating system. I <a href="https://www.unixsdigest.com/articles/openbsd-is-fantastic.html">highly recommend</a> OpenBSD over any other operating system for this kind of task.</p>
+<p>In truth, you can get a somewhat similar setup with one of the other <a href="https://en.wikipedia.org/wiki/Comparison_of_BSD_operating_systems">BSD flavors</a> or one of the many different <a href="https://en.wikipedia.org/wiki/Linux_distribution">Linux distribution</a>, but <a href="https://www.openbsd.org/">OpenBSD</a> is specifically very well suited and designed for this kind of task. Not only does it come with all the needed software in the base install, but it also has significantly better security and tons of improved mitigations already build-in into the operating system. I <a href="https://www.unixdigest.com/articles/openbsd-is-fantastic.html">highly recommend</a> OpenBSD over any other operating system for this kind of task.</p>
 
 <p>Furthermore, OpenBSD is special, and this is not an exaggeration. The manual pages are very readable and often the only information you need to, more or less, effortless create configuration files for the various services you need. The OpenBSD project has a very high level of quality requirements for both the software and the manual pages.</p>
 
@@ -1217,7 +1217,7 @@ serve-expired: yes</pre>
 
 <p>Now we get to the interesting part about domain blocking.</p>
 
-<p>I have created a simple shell script called <a href="https://codeberg.org/unixsdigest/dnsblockbuster">DNSBlockBuster</a> that automatically downloads a set of hosts files from various online sources, concatenates them into one, does some cleanup, and then converts the result into a domain block list for both Unbound and dnsmasq. It mainly blocks ads, porn sites and tracking.</p>
+<p>I have created a simple shell script called <a href="https://codeberg.org/unixdigest/dnsblockbuster">DNSBlockBuster</a> that automatically downloads a set of hosts files from various online sources, concatenates them into one, does some cleanup, and then converts the result into a domain block list for both Unbound and dnsmasq. It mainly blocks ads, porn sites and tracking.</p>
 
 <p>With DNSBlockBuster you have the option to create a pass list, should any of the domains listed in the hosts files be a false positive for you, and you can add your own block list in case you want to manually block some domains that aren't listed in the hosts files. You can also easily add new block lists or remove any of the provided block lists.</p>
 
@@ -1233,7 +1233,7 @@ serve-expired: yes</pre>
 
 <pre><b># rcctl restart unbound</b></pre>
 
-<p>Take a look at the <a href="https://codeberg.org/unixsdigest/dnsblockbuster#user-content-usage">Usage</a> section in the documentation for DNSBlockBuster on how to use it. It's easy and simple.</p>
+<p>Take a look at the <a href="https://codeberg.org/unixdigest/dnsblockbuster#user-content-usage">Usage</a> section in the documentation for DNSBlockBuster on how to use it. It's easy and simple.</p>
 
 <p>Once you have created your block list for Unbound place it in <code>/var/unbound/etc/</code>, then edit the Unbound configuration file <code>/var/unbound/etc/unbound.conf</code> and insert the following somewhere in the <code>server</code> section (before the <code>remote-control</code> section) of the configuration file:</p>
 
